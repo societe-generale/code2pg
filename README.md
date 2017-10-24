@@ -58,7 +58,7 @@ A few examples:
 ```
 ./code2pg -e java -l java
 ```
-- analyze plsql files in another directory with extension .properties and generate a named html report:
+- analyze plsql files in another directory with extension .properties and generate a named html report. When SQL files must be analyzed directly (such as pl/sql or .properties files), please configure the language as plsql. For other languages, Oracle instructions will be searched between string delimiters.
 ```
 ./code2pg -e properties -l plsql -d /tmp/project -o project_estimate.html
 ```
