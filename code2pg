@@ -2,7 +2,7 @@
 
 ################################################################################
 #
-# code2pg v0.9 - code migration estimation from Oracle to PostgreSQL
+# code2pg v0.9.1 - code migration estimation from Oracle to PostgreSQL
 #
 # Author: Anthony Nowocien anthony.nowocien-ext@socgen.com
 # Copyright 2017 Société Générale
@@ -47,14 +47,6 @@ use List::MoreUtils;
 ################################################################################
 # User variables
 
-my %MIGRATION_COST = (
-    "LVL1" => 1,        # time in minutes to migrate a level 1 instruction
-    "LVL2" => 4,        # time in minutes to migrate a level 2 instruction
-    "LVL3" => 8,        # time in minutes to migrate a level 3 instruction
-    "LVL4" => 16,       # time in minutes to migrate a level 4 instruction
-);
-
-my $MINUTES_PER_WORKDAY = 360;    # We estimate 6h of work per day
 
 my %LANGUAGE_COMMENTS_BEGIN = (
     "java"       => '\/\/',   # To be completed with other languages if possible
@@ -84,12 +76,17 @@ my %MIGRATION_COST_FACTOR = (
 ################################################################################
 # Internal variables and constants
 
-our $VERSION                = "0.9";   # this script version number
+our $VERSION                = "0.9.1"; # this script version number
 my  $HELP                   = "";      # print this help and exit the script
 my  $DIRECTORYTYPE          = "";      # the type of directory: file, svn
 my  $DIRECTORY              = "";      # the directory to analyze
 my  $EXTENSION              = "";      # extensions to anayze (without .)
 my  $LANGUAGE               = "";      # the language of files to analyze
+my  $LEVEL1_MINUTES         = "";
+my  $LEVEL2_MINUTES         = "";
+my  $LEVEL3_MINUTES         = "";
+my  $LEVEL4_MINUTES         = "";
+my  $MINUTES_PER_WORKDAY    = "";      # Amount of work per day
 my  $OUTPUT_FORMAT          = "html";  # report's format (txt, html or minimal)
 my  $OUTPUT_FILE            = "";      # the output report (html)
 my  $OUTPUT_CSV             = "";      # the output listing (csv format)
@@ -99,12 +96,20 @@ my  $TAGFILE                = "";      # tag files with special comments ?
 my  $USERNAME               = "";      # username for svn access
 my  $PASSWORD               = "";      # password for svn access
 my  $SHOWVERSION            = "";      # show version and exit
+my  %MIGRATION_COST = (
+     "LVL1" => 1,                      # time in minutes to migrate an
+     "LVL2" => 4,                      # oracle instruction for all 4 levels
+     "LVL3" => 8,                      
+     "LVL4" => 16,                     
+);
+
 my  $user_name              = "";      # username for svn access 
 my  $user_password          = "";      # password for svn access 
 my  $extensions_to_analyze  = "*";
 my  $repertoire_fichiers    = ".";
 my  $directory_type         = "file";  # we analyze local files by default
 my  $langage_utilise        = "";
+my  $workday_minutes        = 360;     # By default, 6h of work per day 
 my  $fichier_sortie         = "";
 my  $file_output            = "estimation.html"; # our report file name
 my  $file_output_handle;
@@ -519,13 +524,18 @@ $oracle_functions_list_{4} = \%oracle_functions_list_4;
 # Command line arguments
 
 GetOptions(
-    'c|csv-output=s'        => \$OUTPUT_CSV,
+    'C|csv-output=s'        => \$OUTPUT_CSV,
     'd|directory=s'         => \$DIRECTORY,
     'D|directorytype=s'     => \$DIRECTORYTYPE,
     'e|extension=s'         => \$EXTENSION,
     'f|format=s'            => \$OUTPUT_FORMAT,
     'h|help'                => \$HELP,
     'l|language=s'          => \$LANGUAGE,
+    'level1-minutes=i'      => \$LEVEL1_MINUTES,
+    'level2-minutes=i'      => \$LEVEL2_MINUTES,
+    'level3-minutes=i'      => \$LEVEL3_MINUTES,
+    'level4-minutes=i'      => \$LEVEL4_MINUTES,
+    'minutes-per-workday=i' => \$MINUTES_PER_WORKDAY,
     'o|output-file=s'       => \$OUTPUT_FILE,
     'O|output-directory=s'  => \$OUTPUT_DIRECTORY,
     'r|orafce'              => \$ORAFCE,
@@ -617,6 +627,22 @@ sub options_handling {
             }
         }
     }
+    
+    if ($MINUTES_PER_WORKDAY) {
+        $workday_minutes = $MINUTES_PER_WORKDAY;
+    }
+    if ($LEVEL1_MINUTES) {
+        $MIGRATION_COST{"LVL1"} = $LEVEL1_MINUTES;
+    }
+    if ($LEVEL2_MINUTES) {
+        $MIGRATION_COST{"LVL2"} = $LEVEL1_MINUTES;
+    }
+    if ($LEVEL3_MINUTES) {
+        $MIGRATION_COST{"LVL3"} = $LEVEL1_MINUTES;
+    }
+    if ($LEVEL4_MINUTES) {
+        $MIGRATION_COST{"LVL4"} = $LEVEL1_MINUTES;
+    }
 
     if ($SHOWVERSION) {
         print "Version: $VERSION\n";
@@ -645,12 +671,11 @@ sub options_handling {
 ################################################################################
 sub help_utilisation {
     print qq{
-
 Usage: code2pg [--option value]
 
   A source code analyzer that estimates an Oracle to PostgreSQL migration.
 
-  -c, --csv-output file    : Oracle keywords will be redirected to this csv file
+  -C, --csv-output file    : Oracle keywords will be redirected to this csv file
   -d, --directory dir      : the source code directory to analyze
   -D, --directorytype type : the type of directory to analyze (svn|file)
   -e, --extension ext      : extensions of files to analyze
@@ -659,6 +684,10 @@ Usage: code2pg [--option value]
   -h, --help               : print this help
   -l, --language lang      : the chosen language calling the RDBMS
                              lang = [java|javascript|jsp|plsql|proc]
+  --level1-minutes m       : minutes for a level1 instruction (1 by default)
+  --level2-minutes m       : minutes for a level2 instruction (4 by default)
+  --level3-minutes m       : minutes for a level3 instruction (8 by default)
+  --level4-minutes m       : minutes for a level4 instruction (16 by default)
   -o, --output-file file   : this will be the generated report filename
                              For html, will be estimation.html by default
   -O, --output-directory dir: the report will be stored in this directory
@@ -772,28 +801,28 @@ sub terminal_output {
         $n_niv1,
         $MIGRATION_COST{"LVL1"},
         $n_niv1 * $MIGRATION_COST{"LVL1"},
-        sprintf( "%.2f", $n_niv1 * $MIGRATION_COST{"LVL1"} / $MINUTES_PER_WORKDAY )
+        sprintf( "%.2f", $n_niv1 * $MIGRATION_COST{"LVL1"} / $workday_minutes )
     );
     $tbl_output->addRow(
         'Level 2',
         $n_niv2,
         $MIGRATION_COST{"LVL2"},
         $n_niv2 * $MIGRATION_COST{"LVL2"},
-        sprintf( "%.2f", $n_niv2 * $MIGRATION_COST{"LVL2"} / $MINUTES_PER_WORKDAY )
+        sprintf( "%.2f", $n_niv2 * $MIGRATION_COST{"LVL2"} / $workday_minutes )
     );
     $tbl_output->addRow(
         'Level 3',
         $n_niv3,
         $MIGRATION_COST{"LVL3"},
         $n_niv3 * $MIGRATION_COST{"LVL3"},
-        sprintf( "%.2f", $n_niv3 * $MIGRATION_COST{"LVL3"} / $MINUTES_PER_WORKDAY )
+        sprintf( "%.2f", $n_niv3 * $MIGRATION_COST{"LVL3"} / $workday_minutes )
     );
     $tbl_output->addRow(
         'Level 4',
         $n_niv4,
         $MIGRATION_COST{"LVL4"},
         $n_niv4 * $MIGRATION_COST{"LVL4"},
-        sprintf( "%.2f", $n_niv4 * $MIGRATION_COST{"LVL4"} / $MINUTES_PER_WORKDAY )
+        sprintf( "%.2f", $n_niv4 * $MIGRATION_COST{"LVL4"} / $workday_minutes )
     );
     $tbl_output->addRowLine();
 
@@ -891,16 +920,16 @@ sub html_output {
     my %niv4 = defined $niv_{4} ? %{$niv_{4}} : ();
 
     foreach my $el ( sort keys %niv1) {
-        $niv1{$el} = sprintf("%.2f", $niv1{$el} * $MIGRATION_COST{"LVL1"} / $MINUTES_PER_WORKDAY);
+        $niv1{$el} = sprintf("%.2f", $niv1{$el} * $MIGRATION_COST{"LVL1"} / $workday_minutes);
     }
     foreach my $el ( sort keys %niv2) {
-        $niv2{$el} = sprintf("%.2f", $niv2{$el} * $MIGRATION_COST{"LVL2"} / $MINUTES_PER_WORKDAY);
+        $niv2{$el} = sprintf("%.2f", $niv2{$el} * $MIGRATION_COST{"LVL2"} / $workday_minutes);
     }
     foreach my $el ( sort keys %niv3) {
-        $niv3{$el} = sprintf("%.2f", $niv3{$el} * $MIGRATION_COST{"LVL3"} / $MINUTES_PER_WORKDAY);
+        $niv3{$el} = sprintf("%.2f", $niv3{$el} * $MIGRATION_COST{"LVL3"} / $workday_minutes);
     }
     foreach my $el ( sort keys %niv4) {
-        $niv4{$el} = sprintf("%.2f", $niv4{$el} * $MIGRATION_COST{"LVL4"} / $MINUTES_PER_WORKDAY);
+        $niv4{$el} = sprintf("%.2f", $niv4{$el} * $MIGRATION_COST{"LVL4"} / $workday_minutes);
     }
 
     # level for mandays
@@ -964,10 +993,10 @@ sub html_output {
     ###########################################################################
     # Chart: Difficulty by level
 
-    my $n1 = sprintf("%.2f", $n_niv1 * $MIGRATION_COST{"LVL1"} / $MINUTES_PER_WORKDAY);
-    my $n2 = sprintf("%.2f", $n_niv2 * $MIGRATION_COST{"LVL2"} / $MINUTES_PER_WORKDAY);
-    my $n3 = sprintf("%.2f", $n_niv3 * $MIGRATION_COST{"LVL3"} / $MINUTES_PER_WORKDAY);
-    my $n4 = sprintf("%.2f", $n_niv4 * $MIGRATION_COST{"LVL4"} / $MINUTES_PER_WORKDAY);
+    my $n1 = sprintf("%.2f", $n_niv1 * $MIGRATION_COST{"LVL1"} / $workday_minutes);
+    my $n2 = sprintf("%.2f", $n_niv2 * $MIGRATION_COST{"LVL2"} / $workday_minutes);
+    my $n3 = sprintf("%.2f", $n_niv3 * $MIGRATION_COST{"LVL3"} / $workday_minutes);
+    my $n4 = sprintf("%.2f", $n_niv4 * $MIGRATION_COST{"LVL4"} / $workday_minutes);
 
     $ds_diff_by_level .="labels: [\"Level1\",\"Level2\",\"Level3\",\"Level4\"]";
     $ds_diff_by_level .= qq (,
@@ -1137,7 +1166,7 @@ tr:nth-child(even){background-color: #fbfbfb}
     $html .=
       $n_niv1 * $MIGRATION_COST{"LVL1"} . "</td>\n    <td align=\"right\">";
     $html .= sprintf( "%.2f",
-        $n_niv1 * $MIGRATION_COST{"LVL1"} / $MINUTES_PER_WORKDAY );
+        $n_niv1 * $MIGRATION_COST{"LVL1"} / $workday_minutes );
     $html .= "</td>\n  </tr>";
 
     $html .= qq{
@@ -1149,7 +1178,7 @@ tr:nth-child(even){background-color: #fbfbfb}
     $html .=
       $n_niv2 * $MIGRATION_COST{"LVL2"} . "</td>\n    <td align=\"right\">";
     $html .= sprintf( "%.2f",
-        $n_niv2 * $MIGRATION_COST{"LVL2"} / $MINUTES_PER_WORKDAY );
+        $n_niv2 * $MIGRATION_COST{"LVL2"} / $workday_minutes );
     $html .= "</td>\n  </tr>";
 
     $html .= qq{
@@ -1161,7 +1190,7 @@ tr:nth-child(even){background-color: #fbfbfb}
     $html .=
       $n_niv3 * $MIGRATION_COST{"LVL3"} . "</td>\n    <td align=\"right\">";
     $html .= sprintf( "%.2f",
-        $n_niv3 * $MIGRATION_COST{"LVL3"} / $MINUTES_PER_WORKDAY );
+        $n_niv3 * $MIGRATION_COST{"LVL3"} / $workday_minutes );
     $html .= "</td>\n  </tr>";
 
     $html .= qq{
@@ -1173,7 +1202,7 @@ tr:nth-child(even){background-color: #fbfbfb}
     $html .=
       $n_niv4 * $MIGRATION_COST{"LVL4"} . "</td>\n    <td align=\"right\">";
     $html .= sprintf( "%.2f",
-        $n_niv4 * $MIGRATION_COST{"LVL4"} / $MINUTES_PER_WORKDAY );
+        $n_niv4 * $MIGRATION_COST{"LVL4"} / $workday_minutes );
     $html .= "</td>\n  </tr>";
 
     $html .= qq{
@@ -1410,7 +1439,7 @@ sub main {
 	print ("Analyzing [$file_idx / " . scalar(@files) . "]");
 
         foreach my $level ( 1 .. 4 ) {
-            foreach my $element ( keys %{$oracle_functions_list_{$level}} ) {
+            foreach my $element ( keys $oracle_functions_list_{$level} ) {
                 while ( $file_content =~ /$regex_before$oracle_functions_list_{$level}{$element}$regex_after/gip)
                 {
                     # print "I found ${^MATCH} at line $_ with $. \n";
@@ -1465,7 +1494,7 @@ sub main {
       $count_lvl_{2} * $MIGRATION_COST{"LVL2"} +
       $count_lvl_{3} * $MIGRATION_COST{"LVL3"} +
       $count_lvl_{4} * $MIGRATION_COST{"LVL4"};
-    $estimated_load_mandays = $estimated_load / $MINUTES_PER_WORKDAY;
+    $estimated_load_mandays = $estimated_load / $workday_minutes;
 
     $align_extensions_analysees = sprintf( "Number of files with extension .%-10s %d", $extensions_to_analyze, $nb_files );
 
@@ -1532,6 +1561,10 @@ Usage: code2pg
 --extension string
 [--format string]
 --language string
+[--level1-minutes integer]
+[--level2-minutes integer]
+[--level3-minutes integer]
+[--level4-minutes integer]
 [--output-file] string
 [--output-directory string]
 [--orafce]
@@ -1560,7 +1593,7 @@ instructions.
 
 =over
 
-=item B<-c> , B<--csv-output> string
+=item B<-C> , B<--csv-output> string
 
 Oracle keywords will be redirected to this csv file.
 
@@ -1593,6 +1626,22 @@ Prints a short help.
 
 The chosen language calling the RDBMS.
 lang = [java|proc|cobol|javascript|dotnet|plsql|...]
+
+=item B<--level1-minutes > integer
+
+Number of minutes needed to translate a level1 instruction.
+
+=item B<--level2-minutes > integer
+
+Number of minutes needed to translate a level2 instruction.
+
+=item B<--level3-minutes > integer
+
+Number of minutes needed to translate a level3 instruction.
+
+=item B<--level4-minutes > integer
+
+Number of minutes needed to translate a level4 instruction.
 
 =item B<-o> , B<--output-file> string
 
