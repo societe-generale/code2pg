@@ -30,7 +30,7 @@ On a Debian box, the packages could be installed with:
 apt-get install libtext-asciitable-perl libfile-slurp-perl libfile-find-rule-perl
 ```
 
-The script has been tested on Windows with Strawberry Perl (v5.24.3) and works without extra. A warning is issued though as `wc` is usually not recognized.
+The script has been tested on Windows with Strawberry Perl (v5.24.3) with the proper modules installed (the CPAN client can be used for this). A warning is issued though as `wc` is usually not recognized.
 
 Installation
 ------------
