@@ -48,7 +48,7 @@ chmod +x code2pg
 Usage
 -----
 
-A few examples:
+Besides the complete [generated documentation](https://github.com/societe-generale/code2pg/blob/master/doc/code2pg.pod), here a few examples:
 
 - show the command line options of the tool:
 ```
