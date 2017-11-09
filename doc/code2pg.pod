@@ -1,0 +1,176 @@
+=head1 NAME
+
+code2pg - estimate the difficulty of a migration from Oracle
+to PostgreSQL for application code.
+
+=head1 SYNOPSIS
+
+Usage: code2pg
+[--csv-output string]
+[--directory string]
+[--directorytype string]
+--extension string
+[--format string]
+--language string
+[--level1-minutes integer]
+[--level2-minutes integer]
+[--level3-minutes integer]
+[--level4-minutes integer]
+[--output-file] string
+[--output-directory string]
+[--orafce]
+[--password string]
+[--quiet]
+[--tagfiles]
+[--username string]
+[--version]
+
+code2pg B<--help>
+
+=head1 DESCRIPTION
+
+code2pg will estimate in man-days how difficult a migration
+from Oracle to PostgreSQL would be regarding application code. It does not
+handle the database code as ora2pg does, only the given application code.
+Therefore, a directory of source code (either files or svn) should be given as
+input and code2pg will generate a report in one of the
+following format: minimal, text or html.
+
+The program can generate a csv output file, alerting the user on which files
+(and which lines) were Oracle instructions encountered. It can also directly
+tag the source code with special comments in order to navigate quickly to those
+instructions.
+
+=head1 OPTIONS
+
+=over
+
+=item B<-C> , B<--csv-output> string
+
+Oracle keywords will be redirected to this csv file.
+
+=item B<-d>, B<--directory> string
+
+Specify which directory should be recursively analyzed. Defaults to current
+directory.
+
+=item B<-D>, B<--directorytype> string
+
+Specify which type of directory will be analyzed. It could be a normal
+directory within the filesystem or a remote svn access.  Type = [file|svn].
+Defaults to file.
+
+=item B<-e>, B<--extension> string
+
+Which file extensions will be analyzed in the specified directory. No preceding
+dot should be used.
+
+=item B<-f> , B<--format> string
+
+The report will be generated according to the specified format. It could be one
+of these values: txt, html or minimal. Defaults to html.
+
+=item B<-h> , B<--help>
+
+Prints a short help.
+
+=item B<-l> , B<--language> string
+
+The chosen language calling the RDBMS.
+lang = [java|proc|cobol|javascript|dotnet|plsql|...]
+
+=item B<--level1-minutes > integer
+
+Number of minutes needed to translate a level1 instruction.
+
+=item B<--level2-minutes > integer
+
+Number of minutes needed to translate a level2 instruction.
+
+=item B<--level3-minutes > integer
+
+Number of minutes needed to translate a level3 instruction.
+
+=item B<--level4-minutes > integer
+
+Number of minutes needed to translate a level4 instruction.
+
+=item B<-o> , B<--output-file> string
+
+The name (without the directory) of the generated report. A good practice
+would be to use a proper extension depending on the type of report.
+
+=item B<-O> , B<--output-directory> string
+
+Specifies in which directory the report will be saved.
+
+=item B<-r> , B<--orafce>
+
+Specifies if the migration will be using orafce. If so, many Oracle
+instructions won't need to be translated and migrations will be eased.
+
+=item B<-p> , B<--password>
+
+If the directory type is SVN, this will provide the password for the required
+svn commands. Both password and username parameters must be provided at the
+same time. If you do not wish to use this option on the command line, you could
+save your svn credentials locally. The file ~/.subversion/servers should be
+changed with store-passwords=yes and store-plaintext-passwords=yes.
+
+=item B<-q>, B<--quiet>
+
+Do not output to stdout. This will silence notifications such as the progress 
+report.
+
+=item B<-t> , B<--tagfiles>
+
+Every time an Oracle instruction is encountered, the corresponding file and
+line could be tagged in order to alert the developper. This comment will be
+like PGGREPAPPCODE_OracleInstruction, which should allow easy searching. As for
+now, only a local directory is supported (no svn).
+
+=item B<-u> , B<--username>
+
+If the directory type is SVN, this will provide the username for the required
+svn commands. Both password and username parameters must be provided at the
+same time. If you do not wish to use this option on the command line, you could
+save your svn credentials locally. The file ~/.subversion/servers should be
+changed with store-passwords=yes and store-plaintext-passwords=yes.
+
+=item B<-v>, B<--version>
+
+Print the version of the program and exit.
+
+=back
+
+=head1 BUGS AND LIMITATIONS
+
+=over
+
+=item B<Bug: Regex>
+
+too many false positives (user, last, least, ...).
+
+=item B<Bug: Regex>
+
+Strings in text could be used with " or '.
+
+=item B<Bug: Reports >
+
+Reports number of analyzed LOC is wrong (=0) for svn access.
+
+=item B<Limitation: Tag>
+
+Tagfiles cannot be used with a SVN repo yet.
+
+=item B<Limitation: extensions>
+
+Only one extension can be specified at a time.
+
+=item B<Limitation: tests>
+
+Testing (non regression, functionnal, ...) is not included in the estimation
+and can change rather drastically the cost in man-days.
+
+=back
+
