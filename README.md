@@ -139,4 +139,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md)
 License
 --------
 License is under the 2-Clause BSD License.  
-See [LICENSE.md](LICENSE.md)
+[![License](https://img.shields.io/badge/License-BSD%202--Clause-orange.svg)](LICENSE.md)
