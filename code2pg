@@ -1639,19 +1639,19 @@ lang = [java|proc|cobol|javascript|dotnet|plsql|...]
 
 =item B<--level1-minutes > integer
 
-Number of minutes needed to translate a level1 instruction.
+Number of minutes needed to translate a level1 instruction (1 by default).
 
 =item B<--level2-minutes > integer
 
-Number of minutes needed to translate a level2 instruction.
+Number of minutes needed to translate a level2 instruction (4 by default).
 
 =item B<--level3-minutes > integer
 
-Number of minutes needed to translate a level3 instruction.
+Number of minutes needed to translate a level3 instruction (8 by default).
 
 =item B<--level4-minutes > integer
 
-Number of minutes needed to translate a level4 instruction.
+Number of minutes needed to translate a level4 instruction (16 by default).
 
 =item B<--minutes-per-workday > integer
 
