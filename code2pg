@@ -92,6 +92,7 @@ my  $OUTPUT_FILE            = "";      # the output report (html)
 my  $OUTPUT_CSV             = "";      # the output listing (csv format)
 my  $OUTPUT_DIRECTORY       = "";      # the output directory
 my  $ORAFCE                 = "";      # will the migration use orafce ?
+my  $QUIET                  = "";      # silence the script
 my  $TAGFILE                = "";      # tag files with special comments ?
 my  $USERNAME               = "";      # username for svn access
 my  $PASSWORD               = "";      # password for svn access
@@ -118,6 +119,7 @@ my  $instruction_dataset    = "[";  # the javascript dataset for datatables
 my  ( $day, $month, $year ) = (localtime)[ 3, 4, 5 ];
 my  $today = sprintf( "%02d/%02d/%04d", $day, $month + 1, $year + 1900 );
 my  %oracle_functions_list_ = ();
+my  $quiet_exec             = 0;   # don't output to stdout
 
 # each keyword will be matched with a corresponding regex - level 1
 my %oracle_functions_list_1 = (
@@ -531,18 +533,19 @@ GetOptions(
     'f|format=s'            => \$OUTPUT_FORMAT,
     'h|help'                => \$HELP,
     'l|language=s'          => \$LANGUAGE,
+    'o|output-file=s'       => \$OUTPUT_FILE,
+    'O|output-directory=s'  => \$OUTPUT_DIRECTORY,
+    'p|password=s'          => \$PASSWORD,
+    'q|quiet'               => \$QUIET,
+    'r|orafce'              => \$ORAFCE,
+    'T|tagfiles'            => \$TAGFILE,
+    'u|username=s'          => \$USERNAME,
+    'v|version'             => \$SHOWVERSION,
     'level1-minutes=i'      => \$LEVEL1_MINUTES,
     'level2-minutes=i'      => \$LEVEL2_MINUTES,
     'level3-minutes=i'      => \$LEVEL3_MINUTES,
     'level4-minutes=i'      => \$LEVEL4_MINUTES,
     'minutes-per-workday=i' => \$MINUTES_PER_WORKDAY,
-    'o|output-file=s'       => \$OUTPUT_FILE,
-    'O|output-directory=s'  => \$OUTPUT_DIRECTORY,
-    'r|orafce'              => \$ORAFCE,
-    'p|password=s'          => \$PASSWORD,
-    'T|tagfiles'            => \$TAGFILE,
-    'u|username=s'          => \$USERNAME,
-    'v|version'             => \$SHOWVERSION,
 );
 
 ################################################################################
@@ -643,7 +646,9 @@ sub options_handling {
     if ($LEVEL4_MINUTES) {
         $MIGRATION_COST{"LVL4"} = $LEVEL1_MINUTES;
     }
-
+    if ($QUIET) {
+        $quiet_exec = 1;
+    }
     if ($SHOWVERSION) {
         print "Version: $VERSION\n";
 	exit(1);
@@ -688,11 +693,14 @@ Usage: code2pg [--option value]
   --level2-minutes m       : minutes for a level2 instruction (4 by default)
   --level3-minutes m       : minutes for a level3 instruction (8 by default)
   --level4-minutes m       : minutes for a level4 instruction (16 by default)
+  --minutes-per-workday m  : number of minutes per workday (360 by default)
   -o, --output-file file   : this will be the generated report filename
                              For html, will be estimation.html by default
   -O, --output-directory dir: the report will be stored in this directory
-  -r, --orafce             : will the migration use orafce compatibility layer
   -p, --password pwd       : password for SVN access
+  -q, --quiet              : do not output to stdout. Useful for batch 
+                             processing and redirection.
+  -r, --orafce             : will the migration use orafce compatibility layer
   -T, --tagfiles           : if enabled, sources files will be tagged directly 
                              for Oracle instructions
   -u, --username user      : username for SVN access
@@ -1400,7 +1408,7 @@ sub main {
     $matching_lvl_{3} = ();
     $matching_lvl_{4} = ();
 
-    print "Analyzing ";
+    print "Analyzing " if (!$quiet_exec);
     @files = &get_file_list();
 
     foreach ( 1 .. 4 ) {
@@ -1435,8 +1443,8 @@ sub main {
         $file_content = &get_file_content($file);
 
 	# Poor man progress bar
-	print ("\b" x (14 + scalar(@files)));
-	print ("Analyzing [$file_idx / " . scalar(@files) . "]");
+	print ("\b" x (14 + scalar(@files))) if (!$quiet_exec);
+	print ("Analyzing [$file_idx / " . scalar(@files) . "]") if (!$quiet_exec);
 
         foreach my $level ( 1 .. 4 ) {
             foreach my $element ( keys $oracle_functions_list_{$level} ) {
@@ -1479,7 +1487,7 @@ sub main {
             my $sed_res = `sed -i 's///g' $file`;
         }
     }
-    print "\rDone !                                                     \n";
+    print "\rDone !                                                     \n" if (!$quiet_exec);
 
     if ( $directory_type eq "file" ) {
         $nb_total_lignes = `( find $repertoire_fichiers -name "*.$extensions_to_analyze" -print0 | xargs -0 cat ) | wc -l`;
@@ -1544,7 +1552,7 @@ sub main {
 }
 
 #####################################################################
-# Generate man and html pages with pod2man, pod2html, pod2text...
+# Generate man and html pages with podselect, pod2man, ...
 #####################################################################
 
 =head1 NAME
@@ -1565,10 +1573,12 @@ Usage: code2pg
 [--level2-minutes integer]
 [--level3-minutes integer]
 [--level4-minutes integer]
+[--minutes-per-workday integer]
 [--output-file] string
 [--output-directory string]
 [--orafce]
 [--password string]
+[--quiet]
 [--tagfiles]
 [--username string]
 [--version]
@@ -1643,6 +1653,10 @@ Number of minutes needed to translate a level3 instruction.
 
 Number of minutes needed to translate a level4 instruction.
 
+=item B<--minutes-per-workday > integer
+
+Number of minutes per workday (360 by default).
+
 =item B<-o> , B<--output-file> string
 
 The name (without the directory) of the generated report. A good practice
@@ -1664,6 +1678,11 @@ svn commands. Both password and username parameters must be provided at the
 same time. If you do not wish to use this option on the command line, you could
 save your svn credentials locally. The file ~/.subversion/servers should be
 changed with store-passwords=yes and store-plaintext-passwords=yes.
+
+=item B<-q>, B<--quiet>
+
+Do not output to stdout. This will silence notifications such as the progress 
+report.
 
 =item B<-t> , B<--tagfiles>
 
