@@ -30,12 +30,11 @@ code2pg B<--help>
 
 =head1 DESCRIPTION
 
-code2pg will estimate in man-days how difficult a migration
-from Oracle to PostgreSQL would be regarding application code. It does not
-handle the database code as ora2pg does, only the given application code.
-Therefore, a directory of source code (either files or svn) should be given as
-input and code2pg will generate a report in one of the
-following format: minimal, text or html.
+code2pg will estimate in man-days how difficult a migration from Oracle to 
+PostgreSQL would be regarding application code. It does not handle the database 
+code as ora2pg does, only the given application code. Therefore, a directory of 
+source code (either files or svn) should be given as input and code2pg will 
+generate a report in one of the following format: minimal, text or html.
 
 The program can generate a csv output file, alerting the user on which files
 (and which lines) were Oracle instructions encountered. It can also directly
@@ -48,7 +47,8 @@ instructions.
 
 =item B<-C> , B<--csv-output> string
 
-Oracle keywords will be redirected to this csv file.
+Oracle keywords will be redirected to this csv file. This file could be used to 
+monitor the progress of the migration while working on the translation.
 
 =item B<-d>, B<--directory> string
 
@@ -131,8 +131,10 @@ report.
 
 Every time an Oracle instruction is encountered, the corresponding file and
 line could be tagged in order to alert the developper. This comment will be
-like PGGREPAPPCODE_OracleInstruction, which should allow easy searching. As for
+like CODE2PG_OracleInstruction, which should allow easy searching. As for
 now, only a local directory is supported (no svn).
+
+Important: use on a copy of your files.
 
 =item B<-u> , B<--username>
 
