@@ -47,7 +47,6 @@ use List::MoreUtils;
 ################################################################################
 # User variables
 
-
 my %LANGUAGE_COMMENTS_BEGIN = (
     "java"       => '\/\/',   # To be completed with other languages if possible
     "javascript" => "\/\/",
@@ -55,6 +54,7 @@ my %LANGUAGE_COMMENTS_BEGIN = (
     "plsql"      => "--",
     "proc"       => "\/\/",
 );
+
 my %LANGUAGE_COMMENTS_END = (
     "java"       => '',       # To be completed with other languages if possible
     "javascript" => "",
@@ -82,10 +82,10 @@ my  $DIRECTORYTYPE          = "";      # the type of directory: file, svn
 my  $DIRECTORY              = "";      # the directory to analyze
 my  $EXTENSION              = "";      # extensions to anayze (without .)
 my  $LANGUAGE               = "";      # the language of files to analyze
-my  $LEVEL1_MINUTES         = "";
-my  $LEVEL2_MINUTES         = "";
-my  $LEVEL3_MINUTES         = "";
-my  $LEVEL4_MINUTES         = "";
+my  $LEVEL1_MINUTES         = "";      # overwrite default values for level 1
+my  $LEVEL2_MINUTES         = "";      # overwrite default values for level 2
+my  $LEVEL3_MINUTES         = "";      # overwrite default values for level 3
+my  $LEVEL4_MINUTES         = "";      # overwrite default values for level 4
 my  $MINUTES_PER_WORKDAY    = "";      # Amount of work per day
 my  $OUTPUT_FORMAT          = "html";  # report's format (txt, html or minimal)
 my  $OUTPUT_FILE            = "";      # the output report (html)
@@ -106,20 +106,20 @@ my  %MIGRATION_COST = (
 
 my  $user_name              = "";      # username for svn access 
 my  $user_password          = "";      # password for svn access 
-my  $extensions_to_analyze  = "*";
-my  $repertoire_fichiers    = ".";
+my  $extensions_to_analyze  = "*";     # which extensions to analyze
+my  $dir_to_analyze         = ".";     # default directory to analyze
 my  $directory_type         = "file";  # we analyze local files by default
-my  $langage_utilise        = "";
-my  $workday_minutes        = 360;     # By default, 6h of work per day 
-my  $fichier_sortie         = "";
+my  $chosen_language        = "";
+my  $workday_minutes        = 360;     # by default, 6h of work per day 
+my  $csv_file_output        = "";      # the csv file to log instructions
 my  $file_output            = "estimation.html"; # our report file name
 my  $file_output_handle;
 my  $directory_output       = ".";
-my  $instruction_dataset    = "[";  # the javascript dataset for datatables
+my  $instruction_dataset    = "[";     # the javascript dataset for datatables
 my  ( $day, $month, $year ) = (localtime)[ 3, 4, 5 ];
 my  $today = sprintf( "%02d/%02d/%04d", $day, $month + 1, $year + 1900 );
 my  %oracle_functions_list_ = ();
-my  $quiet_exec             = 0;   # don't output to stdout
+my  $quiet_exec             = 0;       # don't output to stdout
 
 # each keyword will be matched with a corresponding regex - level 1
 my %oracle_functions_list_1 = (
@@ -566,23 +566,19 @@ sub options_handling {
     # Add a "/" at the end of the directory if needed
     if ($DIRECTORY) {
         if ( substr( $DIRECTORY, -1 ) eq "\/" ) {
-            $repertoire_fichiers = $DIRECTORY;
+            $dir_to_analyze = $DIRECTORY;
         }
-        else { $repertoire_fichiers = $DIRECTORY . "/"; }
+        else { $dir_to_analyze = $DIRECTORY . "/"; }
     }
 
     if ($EXTENSION) {
         $extensions_to_analyze = $EXTENSION;
     }
 
-    if ($OUTPUT_FORMAT) {
-        if (    ( $OUTPUT_FORMAT ne "txt" )
-            and ( $OUTPUT_FORMAT ne "html" )
-            and ( $OUTPUT_FORMAT ne "minimal" ) )
-        {
-            print STDERR "Unrecognized output format!\n";
-            exit(2);
-        }
+    if ( ( $OUTPUT_FORMAT ne "txt" ) and ( $OUTPUT_FORMAT ne "html" ) and 
+	    ( $OUTPUT_FORMAT ne "minimal" ) ) {
+        print STDERR "Unrecognized output format!\n";
+        exit(2);
     }
 
     if ($OUTPUT_FILE) {
@@ -590,7 +586,7 @@ sub options_handling {
     }
 
     if ($OUTPUT_CSV) {
-        $fichier_sortie = $OUTPUT_CSV;
+        $csv_file_output = $OUTPUT_CSV;
     }
 
     if ($OUTPUT_DIRECTORY) {
@@ -602,13 +598,13 @@ sub options_handling {
 
     # We should also apply the language ponderation
     if ($LANGUAGE) {
-        if    ( $LANGUAGE eq "java" )       { $langage_utilise = $LANGUAGE; }
-        elsif ( $LANGUAGE eq "proc" )       { $langage_utilise = $LANGUAGE; }
-        elsif ( $LANGUAGE eq "cobol" )      { $langage_utilise = $LANGUAGE; }
-        elsif ( $LANGUAGE eq "javascript" ) { $langage_utilise = $LANGUAGE; }
-        elsif ( $LANGUAGE eq "dotnet" )     { $langage_utilise = $LANGUAGE; }
-        elsif ( $LANGUAGE eq "jsp" )        { $langage_utilise = $LANGUAGE; }
-        elsif ( $LANGUAGE eq "plsql" )      { $langage_utilise = $LANGUAGE; }
+        if    ( $LANGUAGE eq "java" )       { $chosen_language = $LANGUAGE; }
+        elsif ( $LANGUAGE eq "proc" )       { $chosen_language = $LANGUAGE; }
+        elsif ( $LANGUAGE eq "cobol" )      { $chosen_language = $LANGUAGE; }
+        elsif ( $LANGUAGE eq "javascript" ) { $chosen_language = $LANGUAGE; }
+        elsif ( $LANGUAGE eq "dotnet" )     { $chosen_language = $LANGUAGE; }
+        elsif ( $LANGUAGE eq "jsp" )        { $chosen_language = $LANGUAGE; }
+        elsif ( $LANGUAGE eq "plsql" )      { $chosen_language = $LANGUAGE; }
         else { print STDERR "Unrecognized language!\n"; exit(2) }
     }
 
@@ -702,14 +698,16 @@ Usage: code2pg [--option value]
                              processing and redirection.
   -r, --orafce             : will the migration use orafce compatibility layer
   -T, --tagfiles           : if enabled, sources files will be tagged directly 
-                             for Oracle instructions
+                             for Oracle instructions. 
+			     Important: use on a copy of your files.
   -u, --username user      : username for SVN access
   -v, --version            : show script version and exit
 
 Examples:
 
-  code2pg -e java -l java
-  code2pg -e properties -l plsql -d /tmp/project -o project_estimate.html 
+  ./code2pg -e java -l java
+  ./code2pg -e properties -l plsql -d /tmp/project -o project_estimate.html 
+  ./code2pg -D svn -d https://mysvnrepo/project/trunk -l java -e java -f txt
 
 };
     exit(1);
@@ -764,16 +762,16 @@ sub read_lib {
 # the command line output
 sub terminal_output {
     my %niv_               = %{ +shift };
-    my $n_niv1             = shift;
-    my $n_niv2             = shift;
-    my $n_niv3             = shift;
-    my $n_niv4             = shift;
+    my $n_lvl1             = shift;       # number of level1 instructions
+    my $n_lvl2             = shift;       # number of level2 instructions
+    my $n_lvl3             = shift;       # number of level3 instructions
+    my $n_lvl4             = shift;       # number of level4 instructions
     my $nb_fct_tot         = shift;
-    my $charge_estimee     = shift;
-    my $charge_jours_homme = shift;
-    my $ext_a_analyser     = shift;
+    my $estimated_load     = shift;       # estimate in minutes
+    my $estimated_load_md  = shift;       # estimate in man-days
+    my $ext_to_analyze     = shift;       # which extensions to analyze
     my $nb_fic             = shift;
-    my $total_nb_lines      = shift;
+    my $total_nb_lines     = shift;
 
     if (eval {require Text::ASCIITable; 1} ne 1) {
         die("Unable to load Perl module Text::ASCIITable !\n");
@@ -806,31 +804,31 @@ sub terminal_output {
     # Could use a loop instead (look for $n_nivX)
     $tbl_output->addRow(
         'Level 1',
-        $n_niv1,
+        $n_lvl1,
         $MIGRATION_COST{"LVL1"},
-        $n_niv1 * $MIGRATION_COST{"LVL1"},
-        sprintf( "%.2f", $n_niv1 * $MIGRATION_COST{"LVL1"} / $workday_minutes )
+        $n_lvl1 * $MIGRATION_COST{"LVL1"},
+        sprintf( "%.2f", $n_lvl1 * $MIGRATION_COST{"LVL1"} / $workday_minutes )
     );
     $tbl_output->addRow(
         'Level 2',
-        $n_niv2,
+        $n_lvl2,
         $MIGRATION_COST{"LVL2"},
-        $n_niv2 * $MIGRATION_COST{"LVL2"},
-        sprintf( "%.2f", $n_niv2 * $MIGRATION_COST{"LVL2"} / $workday_minutes )
+        $n_lvl2 * $MIGRATION_COST{"LVL2"},
+        sprintf( "%.2f", $n_lvl2 * $MIGRATION_COST{"LVL2"} / $workday_minutes )
     );
     $tbl_output->addRow(
         'Level 3',
-        $n_niv3,
+        $n_lvl3,
         $MIGRATION_COST{"LVL3"},
-        $n_niv3 * $MIGRATION_COST{"LVL3"},
-        sprintf( "%.2f", $n_niv3 * $MIGRATION_COST{"LVL3"} / $workday_minutes )
+        $n_lvl3 * $MIGRATION_COST{"LVL3"},
+        sprintf( "%.2f", $n_lvl3 * $MIGRATION_COST{"LVL3"} / $workday_minutes )
     );
     $tbl_output->addRow(
         'Level 4',
-        $n_niv4,
+        $n_lvl4,
         $MIGRATION_COST{"LVL4"},
-        $n_niv4 * $MIGRATION_COST{"LVL4"},
-        sprintf( "%.2f", $n_niv4 * $MIGRATION_COST{"LVL4"} / $workday_minutes )
+        $n_lvl4 * $MIGRATION_COST{"LVL4"},
+        sprintf( "%.2f", $n_lvl4 * $MIGRATION_COST{"LVL4"} / $workday_minutes )
     );
     $tbl_output->addRowLine();
 
@@ -839,23 +837,23 @@ sub terminal_output {
             'Application code estimation',
             $nb_fct_tot,
             sprintf( "%.2f", 0 ),
-            $charge_estimee,
-            sprintf( "%.2f", $charge_jours_homme )
+            $estimated_load,
+            sprintf( "%.2f", $estimated_load_md )
         );
     }
     else {
         $tbl_output->addRow(
             'Application code estimation',
             $nb_fct_tot,
-            sprintf( "%.2f", $charge_estimee / $nb_fct_tot ),
-            $charge_estimee,
-            sprintf( "%.2f", $charge_jours_homme )
+            sprintf( "%.2f", $estimated_load / $nb_fct_tot ),
+            $estimated_load,
+            sprintf( "%.2f", $estimated_load_md )
         );
     }
     $tbl_output->addRowLine();
 
-    my $align_extensions_analysees = sprintf( "Number of files with extension .%-8s %d", $ext_a_analyser, $nb_fic );
-    my $utilisation_orafce = $ORAFCE ? "Yes" : "No";
+    my $analyzed_ext_align = sprintf( "Number of files with extension .%-8s %d", $ext_to_analyze, $nb_fic );
+    my $orafce_usage = $ORAFCE ? "Yes" : "No";
 
     my $term_output = qq{
 .----------------------------------------------------------------------------------------------------------------.
@@ -864,12 +862,12 @@ sub terminal_output {
 
 Version                                  $VERSION
 Analysis date                            $today
-Source code directory                    $repertoire_fichiers
-$align_extensions_analysees
-Language                                 $langage_utilise
+Source code directory                    $dir_to_analyze
+$analyzed_ext_align
+Language                                 $chosen_language
 Number of analyzed LOC                   $total_nb_lines
-Log file                                 $fichier_sortie
-orafce usage                             $utilisation_orafce
+Log file                                 $csv_file_output
+orafce usage                             $orafce_usage
 
 $tbl_output
 $tbl_instructions
@@ -889,34 +887,34 @@ $tbl_instructions
 # printing the html output
 sub html_output {
     my %niv_               = %{ +shift };
-    my $n_niv1             = shift;
-    my $n_niv2             = shift;
-    my $n_niv3             = shift;
-    my $n_niv4             = shift;
+    my $n_lvl1             = shift;         # number of level1 instructions
+    my $n_lvl2             = shift;         # number of level2 instructions 
+    my $n_lvl3             = shift;         # number of level3 instructions
+    my $n_lvl4             = shift;         # number of level4 instructions
     my $nb_fct_tot         = shift;
-    my $charge_estimee     = shift;
-    my $charge_jours_homme = shift;
-    my $ext_a_analyser     = shift;
+    my $estimated_load     = shift;         # total load in minutes
+    my $estimated_load_md  = shift;         # total load in man-days
+    my $ext_to_analyze     = shift;         # the type of extensions to analyze
     my $nb_fic             = shift;
-    my $total_nb_lines      = shift;
+    my $total_nb_lines     = shift;         # number of analyzed lines of code
 
     my $ext_ana = "";
     my $nb_ana;
-    my $html;
-    my $title;
-    my $align_extensions_analysees = sprintf( "Number of files with extension .%-10s %d", $ext_a_analyser, $nb_fic );
+    my $html;                               # the content of our html output
+    my $title;                              # the title of the html file
+    my $analyzed_ext_align = sprintf( "Number of files with extension .%-10s %d", $ext_to_analyze, $nb_fic );
 
-    $title = "Migration estimation";
+    $title = "Migration estimation";        # could be improved to include
+                                            # name of the current project
 
-    # useless ! > ext_a_analyser...
-    if ( $align_extensions_analysees =~ /(.+) (\d+)/ ) {
+    # should be useless
+    if ( $analyzed_ext_align =~ /(.+) (\d+)/ ) {
         $ext_ana = $1;
         $nb_ana  = $2;
     }
 
-    # dataset for chartjs
-    my $ds_ext_summary   = "";
-    my $ds_diff_by_level = "";
+    my $ds_ext_summary   = "";              # dataset for chartjs
+    my $ds_diff_by_level = "";              # and the available graphs
     my $ds_nb_of_inst    = "";
     my $ds_time_by_inst  = "";
 
@@ -1001,10 +999,10 @@ sub html_output {
     ###########################################################################
     # Chart: Difficulty by level
 
-    my $n1 = sprintf("%.2f", $n_niv1 * $MIGRATION_COST{"LVL1"} / $workday_minutes);
-    my $n2 = sprintf("%.2f", $n_niv2 * $MIGRATION_COST{"LVL2"} / $workday_minutes);
-    my $n3 = sprintf("%.2f", $n_niv3 * $MIGRATION_COST{"LVL3"} / $workday_minutes);
-    my $n4 = sprintf("%.2f", $n_niv4 * $MIGRATION_COST{"LVL4"} / $workday_minutes);
+    my $n1 = sprintf("%.2f", $n_lvl1 * $MIGRATION_COST{"LVL1"} / $workday_minutes);
+    my $n2 = sprintf("%.2f", $n_lvl2 * $MIGRATION_COST{"LVL2"} / $workday_minutes);
+    my $n3 = sprintf("%.2f", $n_lvl3 * $MIGRATION_COST{"LVL3"} / $workday_minutes);
+    my $n4 = sprintf("%.2f", $n_lvl4 * $MIGRATION_COST{"LVL4"} / $workday_minutes);
 
     $ds_diff_by_level .="labels: [\"Level1\",\"Level2\",\"Level3\",\"Level4\"]";
     $ds_diff_by_level .= qq (,
@@ -1020,6 +1018,7 @@ sub html_output {
 <HEAD>
 
 <title>$title</title>
+<meta charset="utf-8"/>
 };
     $html .= &read_lib();
 
@@ -1108,7 +1107,7 @@ tr:nth-child(even){background-color: #fbfbfb}
   </tr>
   <tr>
     <td><b>Source code directory</b></td>
-    <td>$repertoire_fichiers</td>
+    <td>$dir_to_analyze</td>
   </tr>
   <tr>
     <td><b>$ext_ana</b></td>
@@ -1116,7 +1115,7 @@ tr:nth-child(even){background-color: #fbfbfb}
   </tr>
   <tr>
     <td><b>Language</b></td>
-    <td>$langage_utilise</td>
+    <td>$chosen_language</td>
   </tr>
   <tr>
     <td><b>Number of analyzed LOC</b> </td>
@@ -1124,7 +1123,7 @@ tr:nth-child(even){background-color: #fbfbfb}
   </tr>
   <tr>
     <td><b>Log file</b></td>
-    <td>$fichier_sortie</td>
+    <td>$csv_file_output</td>
   </tr>
   <tr>
     <td><b>orafce usage</b></td>
@@ -1168,49 +1167,49 @@ tr:nth-child(even){background-color: #fbfbfb}
     $html .= qq{
   <tr>
     <td align="right">1</td>
-    <td align="right">$n_niv1</td>
+    <td align="right">$n_lvl1</td>
     <td align="right">$MIGRATION_COST{"LVL1"}</td>
     <td align="right">};
     $html .=
-      $n_niv1 * $MIGRATION_COST{"LVL1"} . "</td>\n    <td align=\"right\">";
+      $n_lvl1 * $MIGRATION_COST{"LVL1"} . "</td>\n    <td align=\"right\">";
     $html .= sprintf( "%.2f",
-        $n_niv1 * $MIGRATION_COST{"LVL1"} / $workday_minutes );
+        $n_lvl1 * $MIGRATION_COST{"LVL1"} / $workday_minutes );
     $html .= "</td>\n  </tr>";
 
     $html .= qq{
   <tr>
     <td align="right">2</td>
-    <td align="right">$n_niv2</td>
+    <td align="right">$n_lvl2</td>
     <td align="right">$MIGRATION_COST{"LVL2"}</td>
     <td align="right">};
     $html .=
-      $n_niv2 * $MIGRATION_COST{"LVL2"} . "</td>\n    <td align=\"right\">";
+      $n_lvl2 * $MIGRATION_COST{"LVL2"} . "</td>\n    <td align=\"right\">";
     $html .= sprintf( "%.2f",
-        $n_niv2 * $MIGRATION_COST{"LVL2"} / $workday_minutes );
+        $n_lvl2 * $MIGRATION_COST{"LVL2"} / $workday_minutes );
     $html .= "</td>\n  </tr>";
 
     $html .= qq{
   <tr>
     <td align="right">3</td>
-    <td align="right">$n_niv3</td>
+    <td align="right">$n_lvl3</td>
     <td align="right">$MIGRATION_COST{"LVL3"}</td>
     <td align="right">};
     $html .=
-      $n_niv3 * $MIGRATION_COST{"LVL3"} . "</td>\n    <td align=\"right\">";
+      $n_lvl3 * $MIGRATION_COST{"LVL3"} . "</td>\n    <td align=\"right\">";
     $html .= sprintf( "%.2f",
-        $n_niv3 * $MIGRATION_COST{"LVL3"} / $workday_minutes );
+        $n_lvl3 * $MIGRATION_COST{"LVL3"} / $workday_minutes );
     $html .= "</td>\n  </tr>";
 
     $html .= qq{
   <tr>
     <td align="right">4</td>
-    <td align="right">$n_niv4</td>
+    <td align="right">$n_lvl4</td>
     <td align="right">$MIGRATION_COST{"LVL4"}</td>
     <td align="right">};
     $html .=
-      $n_niv4 * $MIGRATION_COST{"LVL4"} . "</td>\n    <td align=\"right\">";
+      $n_lvl4 * $MIGRATION_COST{"LVL4"} . "</td>\n    <td align=\"right\">";
     $html .= sprintf( "%.2f",
-        $n_niv4 * $MIGRATION_COST{"LVL4"} / $workday_minutes );
+        $n_lvl4 * $MIGRATION_COST{"LVL4"} / $workday_minutes );
     $html .= "</td>\n  </tr>";
 
     $html .= qq{
@@ -1223,17 +1222,17 @@ tr:nth-child(even){background-color: #fbfbfb}
         $html .=
             sprintf( "%.2f", 0 )
           . "</td>\n  <td align=\"right\">"
-          . $charge_estimee
+          . $estimated_load
           . "</td>\n  <td align=\"right\"><b>";
     }
     else {
         $html .=
-            sprintf( "%.2f", $charge_estimee / $nb_fct_tot )
+            sprintf( "%.2f", $estimated_load / $nb_fct_tot )
           . "</td>\n  <td align=\"right\">"
-          . $charge_estimee
+          . $estimated_load
           . "</td>\n  <td align=\"right\"><b>";
     }
-    $html .= sprintf( "%.2f", $charge_jours_homme ) . "</b>\n</table>";
+    $html .= sprintf( "%.2f", $estimated_load_md ) . "</b>\n</table>";
 
     # Chart: number of instructions
     $html .= qq{
@@ -1313,8 +1312,8 @@ tr:nth-child(even){background-color: #fbfbfb}
 sub print_output_file {
     my $file_content = shift;
 
-    open( my $fh_n, '>:encoding(UTF-8)', $fichier_sortie )
-      or die "Impossible to open the file $fichier_sortie !\n Error: $!";
+    open( my $fh_n, '>:encoding(UTF-8)', $csv_file_output )
+      or die "Impossible to open the file $csv_file_output !\n Error: $!";
 
     $file_content =~ s/\h+/ /g;    # We clean our csv output at first
     $file_content =~ s/\r//g;
@@ -1325,6 +1324,7 @@ sub print_output_file {
     close $fh_n;
     return 1;
 }
+
 ################################################################################
 # Get the content of a file
 sub get_file_content {
@@ -1339,11 +1339,11 @@ sub get_file_content {
     # svn access
     elsif ( $directory_type eq "svn" ) {
         my $svncommand = "";
-        if ( $PASSWORD && $USERNAME ) {
-            $svncommand = "--username $user_name --password $user_password cat $repertoire_fichiers$f";
+        if ( $USERNAME ) {
+            $svncommand = "--username $user_name --password $user_password cat $dir_to_analyze$f";
         }
         else {
-            $svncommand = "cat $repertoire_fichiers$f";
+            $svncommand = "cat $dir_to_analyze$f";
         }
         chomp($svncommand);
 
@@ -1353,6 +1353,7 @@ sub get_file_content {
 
     return $fc;
 }
+
 ################################################################################
 # Get the list of files
 sub get_file_list {
@@ -1361,14 +1362,14 @@ sub get_file_list {
 
     if ( $directory_type eq "file" ) {
         @f = File::Find::Rule->file()->name( "*." . $extensions_to_analyze )
-          ->in($repertoire_fichiers);
+          ->in($dir_to_analyze);
     }
     elsif ( $directory_type eq "svn" ) {
         my $svncommand = "";
-        if ( $PASSWORD && $USERNAME ) {
+        if ( $USERNAME ) {
             $svncommand = "--username $user_name --password $user_password ";
         }
-        $svncommand .= "ls -R $repertoire_fichiers | grep -i \".$extensions_to_analyze\$\"";
+        $svncommand .= "ls -R $dir_to_analyze | grep -i \".$extensions_to_analyze\$\"";
         @f = `svn $svncommand`;
         for my $f (@f) {
             chomp $f;
@@ -1392,16 +1393,17 @@ sub main {
     my %count_lvl_             = ();  # Total number of instructions by level
     my $regex_before           = "";  # how we identify keywords in text
     my $regex_after            = "";  # how we identify keywords in text
+    my $current_regex          = "";  # current regex we're looking for
     my $listing_inst           = "";  # The csv output
     my %matching_lvl_          = ();  # instructions with number of occurences
-    my $fichier_modifie        = 0;
-    my @files;
-    my $nb_total_lignes        = 0;   # total number of analyzed lines
+    my $modified_file          = 0;   # did we modify the file
+    my @files;                        # the list of files to parse
+    my $nb_analyzed_lines      = 0;   # total number of analyzed lines
     my $nb_files               = 0;   # total number of files parsed
     my $new_nb_fct_total       = 0;
-    my $estimated_load         = 0;
-    my $estimated_load_mandays = 0;
-    my $align_extensions_analysees = "";
+    my $estimated_load         = 0;   # load in minutes
+    my $estimated_load_mandays = 0;   # load in man-days
+    my $analyzed_ext_align     = "";
 
     $matching_lvl_{1} = ();  
     $matching_lvl_{2} = ();
@@ -1417,7 +1419,7 @@ sub main {
 
     # if we're looking into sql code, keywords are matched directly
     # used in the generated csv file
-    if ( $langage_utilise eq 'plsql' ) {
+    if ( $chosen_language eq 'plsql' ) {
         $regex_before = '^.*'; # to match the whole line for csv. use with /gipm
         $regex_before = '';
         $regex_after  = '.*$';
@@ -1431,13 +1433,12 @@ sub main {
     }
 
     # Will go through each file and look for oracle instructions.
-    # sed will be called many times and will be slow ?
     my $file_idx = 0;
 
     for my $file (@files) {
         my $file_content;
         my $line_number  = 0;
-        $fichier_modifie = 0;
+        $modified_file = 0;
 	$file_idx += 1;
 
         $file_content = &get_file_content($file);
@@ -1448,7 +1449,10 @@ sub main {
 
         foreach my $level ( 1 .. 4 ) {
             foreach my $element ( keys $oracle_functions_list_{$level} ) {
-                while ( $file_content =~ /$regex_before$oracle_functions_list_{$level}{$element}$regex_after/gip)
+		$current_regex = $regex_before . $oracle_functions_list_{$level}{$element} . $regex_after;
+		
+		# the following regex matching is currently the program bottleneck
+                while ( $file_content =~ /$current_regex/gip)
                 {
                     # print "I found ${^MATCH} at line $_ with $. \n";
                     $count_lvl_{$level} += 1;
@@ -1470,28 +1474,28 @@ sub main {
                         my $sed_command = '\''
                           . $line_number
                           . ' s/$/ '
-                          . $LANGUAGE_COMMENTS_BEGIN{$langage_utilise}
-                          . ' PGGREPAPPCODE_'
+                          . $LANGUAGE_COMMENTS_BEGIN{$chosen_language}
+                          . ' CODE2PG_'
                           . $element . " "
-                          . $LANGUAGE_COMMENTS_END{$langage_utilise} . "/'";
+                          . $LANGUAGE_COMMENTS_END{$chosen_language} . "/'";
                         my $sed_res = `sed -i $sed_command $file` ;
                         
-                        $fichier_modifie = 1;
+                        $modified_file = 1;
                     }
                 }
             }
         }
 
         # Sed is adding ^M on the files I tried. We remove them.
-        if ( $fichier_modifie == 1 ) {
+        if ( $modified_file == 1 ) {
             my $sed_res = `sed -i 's///g' $file`;
         }
     }
     print "\rDone !                                                     \n" if (!$quiet_exec);
 
     if ( $directory_type eq "file" ) {
-        $nb_total_lignes = `( find $repertoire_fichiers -name "*.$extensions_to_analyze" -print0 | xargs -0 cat ) | wc -l`;
-        chomp($nb_total_lignes);
+        $nb_analyzed_lines = `( find $dir_to_analyze -name "*.$extensions_to_analyze" -print0 | xargs -0 cat ) | wc -l`;
+        chomp($nb_analyzed_lines);
     }
 
     $nb_files     = scalar @files;
@@ -1504,7 +1508,7 @@ sub main {
       $count_lvl_{4} * $MIGRATION_COST{"LVL4"};
     $estimated_load_mandays = $estimated_load / $workday_minutes;
 
-    $align_extensions_analysees = sprintf( "Number of files with extension .%-10s %d", $extensions_to_analyze, $nb_files );
+    $analyzed_ext_align = sprintf( "Number of files with extension .%-10s %d", $extensions_to_analyze, $nb_files );
 
     # we write to our csv output file
     if ($OUTPUT_CSV) {
@@ -1523,7 +1527,7 @@ sub main {
             $count_lvl_{4},           $new_nb_fct_total,
             $estimated_load,          $estimated_load_mandays,
             $extensions_to_analyze,   $nb_files,
-            $nb_total_lignes
+            $nb_analyzed_lines
         );
     }
     elsif ( $OUTPUT_FORMAT eq "html" ) {
@@ -1533,10 +1537,10 @@ sub main {
             $count_lvl_{4},           $new_nb_fct_total,
             $estimated_load,          $estimated_load_mandays,
             $extensions_to_analyze,   $nb_files,
-            $nb_total_lignes
+            $nb_analyzed_lines
         );
     }
-    elsif ( $OUTPUT_FORMAT eq "minimal" ) {
+    else { # $OUTPUT_FORMAT will be "minimal"
         if ($OUTPUT_FILE eq "") {
             printf ("Estimation: %.2f man-days\n", $estimated_load_mandays );
         }
@@ -1587,12 +1591,11 @@ code2pg B<--help>
 
 =head1 DESCRIPTION
 
-code2pg will estimate in man-days how difficult a migration
-from Oracle to PostgreSQL would be regarding application code. It does not
-handle the database code as ora2pg does, only the given application code.
-Therefore, a directory of source code (either files or svn) should be given as
-input and code2pg will generate a report in one of the
-following format: minimal, text or html.
+code2pg will estimate in man-days how difficult a migration from Oracle to 
+PostgreSQL would be regarding application code. It does not handle the database 
+code as ora2pg does, only the given application code. Therefore, a directory of 
+source code (either files or svn) should be given as input and code2pg will 
+generate a report in one of the following format: minimal, text or html.
 
 The program can generate a csv output file, alerting the user on which files
 (and which lines) were Oracle instructions encountered. It can also directly
@@ -1605,7 +1608,8 @@ instructions.
 
 =item B<-C> , B<--csv-output> string
 
-Oracle keywords will be redirected to this csv file.
+Oracle keywords will be redirected to this csv file. This file could be used to 
+monitor the progress of the migration while working on the translation.
 
 =item B<-d>, B<--directory> string
 
@@ -1688,8 +1692,10 @@ report.
 
 Every time an Oracle instruction is encountered, the corresponding file and
 line could be tagged in order to alert the developper. This comment will be
-like PGGREPAPPCODE_OracleInstruction, which should allow easy searching. As for
+like CODE2PG_OracleInstruction, which should allow easy searching. As for
 now, only a local directory is supported (no svn).
+
+Important: use on a copy of your files.
 
 =item B<-u> , B<--username>
 
