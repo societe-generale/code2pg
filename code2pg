@@ -2,7 +2,7 @@
 
 ################################################################################
 #
-# code2pg v0.9.1 - code migration estimation from Oracle to PostgreSQL
+# code2pg v0.9.2 - code migration estimation from Oracle to PostgreSQL
 #
 # Author: Anthony Nowocien anthony.nowocien-ext@socgen.com
 # Copyright 2017 Société Générale
@@ -76,7 +76,7 @@ my %MIGRATION_COST_FACTOR = (
 ################################################################################
 # Internal variables and constants
 
-our $VERSION                = "0.9.1"; # this script version number
+our $VERSION                = "0.9.2"; # this script version number
 my  $HELP                   = "";      # print this help and exit the script
 my  $DIRECTORYTYPE          = "";      # the type of directory: file, svn
 my  $DIRECTORY              = "";      # the directory to analyze
@@ -1448,7 +1448,7 @@ sub main {
 	print ("Analyzing [$file_idx / " . scalar(@files) . "]") if (!$quiet_exec);
 
         foreach my $level ( 1 .. 4 ) {
-            foreach my $element ( keys $oracle_functions_list_{$level} ) {
+            foreach my $element ( keys %{$oracle_functions_list_{$level}} ) { 
 		$current_regex = $regex_before . $oracle_functions_list_{$level}{$element} . $regex_after;
 		
 		# the following regex matching is currently the program bottleneck
