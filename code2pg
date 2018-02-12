@@ -63,6 +63,16 @@ my %LANGUAGE_COMMENTS_END = (
     "proc"       => "",
 );
 
+my %REGEX_BEFORE = (
+    "plsql"      => '',      # how we identify keywords, directly as in plsql
+    "others"     => '".*?',  # or in character strings ?
+);
+
+my %REGEX_AFTER = (
+    "plsql"      => '',      # how we identify keywords, directly as in plsql
+    "others"     => '.*?\"', # or in character strings ?
+);
+
 my %MIGRATION_COST_FACTOR = (
     "java"       => 1,  # apply a multiplication factor to the estimated load
     "proc"       => 1,  # This should depend on the connector
@@ -78,6 +88,7 @@ my %MIGRATION_COST_FACTOR = (
 
 our $VERSION                = "0.9.2"; # this script version number
 my  $HELP                   = "";      # print this help and exit the script
+my  $DEBUG                  = "";      # enable some debugging output
 my  $DIRECTORYTYPE          = "";      # the type of directory: file, svn
 my  $DIRECTORY              = "";      # the directory to analyze
 my  $EXTENSION              = "";      # extensions to anayze (without .)
@@ -386,7 +397,7 @@ my %oracle_functions_list_4 = (
 );
 
 # The list of orafce functions. So far the regexes are useless
-my %liste_fonctions_orafce = (
+my %list_orafce_functions = (
     'ADD_MONTHS'          => '\bADD_MONTHS\b',
     'REGISTER'            => '\bREGISTER\b',
     'SIGNAL'              => '\bSIGNAL\b',
@@ -541,6 +552,7 @@ GetOptions(
     'T|tagfiles'            => \$TAGFILE,
     'u|username=s'          => \$USERNAME,
     'v|version'             => \$SHOWVERSION,
+    'debug'                 => \$DEBUG,
     'level1-minutes=i'      => \$LEVEL1_MINUTES,
     'level2-minutes=i'      => \$LEVEL2_MINUTES,
     'level3-minutes=i'      => \$LEVEL3_MINUTES,
@@ -611,7 +623,7 @@ sub options_handling {
     # Easier migration if orafce is used
     # we will remove from all lists elements found in the orafce hash
     if ($ORAFCE) {
-        foreach my $item ( keys %liste_fonctions_orafce ) {
+        foreach my $item ( keys %list_orafce_functions ) {
             if ( exists $oracle_functions_list_{1}{$item} ) {
                 delete $oracle_functions_list_{1}{$item};
             }
@@ -697,8 +709,8 @@ Usage: code2pg [--option value]
   -q, --quiet              : do not output to stdout. Useful for batch 
                              processing and redirection.
   -r, --orafce             : will the migration use orafce compatibility layer
-  -T, --tagfiles           : if enabled, sources files will be tagged directly 
-                             for Oracle instructions. 
+  -T, --tagfiles           : if enabled, local source files will be tagged 
+                             directly for Oracle instructions. 
 			     Important: use on a copy of your files.
   -u, --username user      : username for SVN access
   -v, --version            : show script version and exit
@@ -725,7 +737,7 @@ sub read_lib {
     while (my $d = <DATA>) {
         if ($d =~ /^LIBFILE: ([^\s]+)/) {
             $file = $1;
-	    # print "file = $file\n";
+	    print STDERR "\nlibfile = $file\n" if ($DEBUG);
             if ($cssorscript eq 'js') {
                 $lib .= '</script>';
             }
@@ -1318,8 +1330,10 @@ sub print_output_file {
     $file_content =~ s/\h+/ /g;    # We clean our csv output at first
     $file_content =~ s/\r//g;
 
+    print STDERR "\nWriting to csv output...\n" if ($DEBUG);
     print {$fh_n} "difficulty;file;line number;instruction;extract;\n";
     print {$fh_n} $file_content;
+    print STDERR "\nWriting complete.\n" if ($DEBUG);
 
     close $fh_n;
     return 1;
@@ -1331,6 +1345,7 @@ sub get_file_content {
 
     my $f = shift; # current file we're working on
     my $fc ="";
+    # print "file = $f\n";
 
     # directory access
     if ( $directory_type eq "file" ) {
@@ -1347,7 +1362,6 @@ sub get_file_content {
         }
         chomp($svncommand);
 
-	# print "file = $f\n";
         $fc = `svn $svncommand`;
     }
 
@@ -1391,8 +1405,8 @@ sub get_file_list {
 sub main {
 
     my %count_lvl_             = ();  # Total number of instructions by level
-    my $regex_before           = "";  # how we identify keywords in text
-    my $regex_after            = "";  # how we identify keywords in text
+    my $regex_bef              = "";  # how we identify keywords - regex start
+    my $regex_aft              = "";  # how we identify keywords - regex end
     my $current_regex          = "";  # current regex we're looking for
     my $listing_inst           = "";  # The csv output
     my %matching_lvl_          = ();  # instructions with number of occurences
@@ -1417,20 +1431,35 @@ sub main {
         $count_lvl_{$_} = 0;
     }
 
-    # if we're looking into sql code, keywords are matched directly
-    # used in the generated csv file
-    if ( $chosen_language eq 'plsql' ) {
-        $regex_before = '^.*'; # to match the whole line for csv. use with /gipm
-        $regex_before = '';
-        $regex_after  = '.*$';
-        $regex_after  = '';
+    # # if we're looking into sql code, keywords are matched directly
+    # # used in the generated csv file
+    # if ( $chosen_language eq 'plsql' ) {
+    #     $regex_before = '^.*'; # to match the whole line for csv. use with /gipm
+    #     $regex_before = '';
+    #     $regex_after  = '.*$';
+    #     $regex_after  = '';
+    # }
+
+    # # in most languages, we look after keywords in character strings
+    # else {
+    #     $regex_before = '".*?';
+    #     $regex_after  = '.*?\"';
+    # }
+
+    if (exists $REGEX_BEFORE{$chosen_language}) {
+        $regex_bef = $REGEX_BEFORE{$chosen_language};
+    }
+    else {
+        $regex_bef = $REGEX_BEFORE{'others'};
     }
 
-    # in most languages, we look after keywords in character strings
-    else {
-        $regex_before = '".*?';
-        $regex_after  = '.*?\"';
+    if (exists $REGEX_AFTER{$chosen_language}) {
+        $regex_aft = $REGEX_AFTER{$chosen_language};
     }
+    else {
+        $regex_aft = $REGEX_AFTER{'others'};
+    }
+
 
     # Will go through each file and look for oracle instructions.
     my $file_idx = 0;
@@ -1438,8 +1467,8 @@ sub main {
     for my $file (@files) {
         my $file_content;
         my $line_number  = 0;
-        $modified_file = 0;
-	$file_idx += 1;
+        $modified_file   = 0;
+	$file_idx       += 1;
 
         $file_content = &get_file_content($file);
 
@@ -1449,7 +1478,7 @@ sub main {
 
         foreach my $level ( 1 .. 4 ) {
             foreach my $element ( keys %{$oracle_functions_list_{$level}} ) { 
-		$current_regex = $regex_before . $oracle_functions_list_{$level}{$element} . $regex_after;
+		$current_regex = $regex_bef . $oracle_functions_list_{$level}{$element} . $regex_aft;
 		
 		# the following regex matching is currently the program bottleneck
                 while ( $file_content =~ /$current_regex/gip)
@@ -1498,7 +1527,7 @@ sub main {
         chomp($nb_analyzed_lines);
     }
 
-    $nb_files     = scalar @files;
+    $nb_files         = scalar @files;
     $new_nb_fct_total = $count_lvl_{1} + $count_lvl_{2} + $count_lvl_{3} + $count_lvl_{4};
 
     $estimated_load =
