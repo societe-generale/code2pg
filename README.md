@@ -1,6 +1,9 @@
 code2pg
 =======
 
+<img src="./doc/logo_code _2_pg.png" width="120">
+
+
 What is code2pg ?
 --------------
 
