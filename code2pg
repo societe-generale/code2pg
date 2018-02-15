@@ -1097,8 +1097,6 @@ tr:nth-child(even){background-color: #fbfbfb}
 
 </script>
 
-
-
 </head>
 
 };
@@ -1345,7 +1343,7 @@ sub get_file_content {
 
     my $f = shift; # current file we're working on
     my $fc ="";
-    # print "file = $f\n";
+    print STDERR "\nReading file: $f\n" if ($DEBUG);
 
     # directory access
     if ( $directory_type eq "file" ) {
@@ -1355,10 +1353,10 @@ sub get_file_content {
     elsif ( $directory_type eq "svn" ) {
         my $svncommand = "";
         if ( $USERNAME ) {
-            $svncommand = "--username $user_name --password $user_password cat $dir_to_analyze$f";
+            $svncommand = "--username $user_name --password $user_password cat '$dir_to_analyze$f'";
         }
         else {
-            $svncommand = "cat $dir_to_analyze$f";
+            $svncommand = "cat '$dir_to_analyze$f'";
         }
         chomp($svncommand);
 
@@ -1390,11 +1388,6 @@ sub get_file_list {
         }
     }
 
-    # print "File listing\n";
-    # foreach (@f) {
-    #     print "$_\n";
-    # }
-    # print "================================================\n";
     return @f;
 }
 
