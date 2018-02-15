@@ -1,8 +1,11 @@
 code2pg
 =======
 
+<img src="./doc/logo_code _2_pg.png" width="120">
+
+
 What is code2pg ?
--------------
+--------------
 
 `code2pg` is a tool that help migrating application code that contains SQL queries from Oracle to PostgreSQL standard.
 
@@ -13,7 +16,7 @@ It can:
 - connect directly to a SVN repository or use local files;
 - be tuned according to the team's expertise.
 
-Prerequisites
+Prerequisites :
 -------------
 
 `code2pg` is a standalone script. It requires the `File::Slurp`, `File::Find::Rule` and `Text::ASCIITable` Perl modules.
