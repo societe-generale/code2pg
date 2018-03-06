@@ -2,7 +2,7 @@
 
 ################################################################################
 #
-# code2pg v0.9.2 - code migration estimation from Oracle to PostgreSQL
+# code2pg v0.10.0 - code migration estimation from Oracle to PostgreSQL
 #
 # Author: Anthony Nowocien anthony.nowocien-ext@socgen.com
 # Copyright 2017 Société Générale
@@ -33,9 +33,11 @@
 #
 ################################################################################
 
-# Caution: code2pg needs extra packages [Text::ASCIITable] and File::Slurp
-#          yum install perl-Text-ASCIITable perl-File-Slurp
-#          ASCII table only needed for the text output
+# Caution: code2pg needs extra packages:
+#          - Text::ASCIITable (only mandatory for text output)
+#          - File::Slurp
+#          - Config::General
+# Centos: yum install perl-Text-ASCIITable perl-File-Slurp perl-Config-General
 
 use strict;
 use warnings;
@@ -43,6 +45,7 @@ use Getopt::Long qw(:config no_ignore_case bundling);
 use File::Find::Rule;
 use File::Slurp;
 use List::MoreUtils;
+use Config::General;
 
 ################################################################################
 # User variables
@@ -73,64 +76,57 @@ my %REGEX_AFTER = (
     "others"     => '.*?\"', # or in character strings ?
 );
 
-my %MIGRATION_COST_FACTOR = (
-    "java"       => 1,  # apply a multiplication factor to the estimated load
-    "proc"       => 1,  # This should depend on the connector
-    "cobol"      => 1,  # Values should be adjusted accordingly
-    "javascript" => 1,  # Not used now
-    "dotnet"     => 1,
-    "jsp"        => 1,
-    "plsql"      => 1,
-);
 
 ################################################################################
 # Internal variables and constants
 
-our $VERSION                = "0.9.2"; # this script version number
-my  $HELP                   = "";      # print this help and exit the script
-my  $DEBUG                  = "";      # enable some debugging output
-my  $DIRECTORYTYPE          = "";      # the type of directory: file, svn
-my  $DIRECTORY              = "";      # the directory to analyze
-my  $EXTENSION              = "";      # extensions to anayze (without .)
-my  $LANGUAGE               = "";      # the language of files to analyze
-my  $LEVEL1_MINUTES         = "";      # overwrite default values for level 1
-my  $LEVEL2_MINUTES         = "";      # overwrite default values for level 2
-my  $LEVEL3_MINUTES         = "";      # overwrite default values for level 3
-my  $LEVEL4_MINUTES         = "";      # overwrite default values for level 4
-my  $MINUTES_PER_WORKDAY    = "";      # Amount of work per day
-my  $OUTPUT_FORMAT          = "html";  # report's format (txt, html or minimal)
-my  $OUTPUT_FILE            = "";      # the output report (html)
-my  $OUTPUT_CSV             = "";      # the output listing (csv format)
-my  $OUTPUT_DIRECTORY       = "";      # the output directory
-my  $ORAFCE                 = "";      # will the migration use orafce ?
-my  $QUIET                  = "";      # silence the script
-my  $TAGFILE                = "";      # tag files with special comments ?
-my  $USERNAME               = "";      # username for svn access
-my  $PASSWORD               = "";      # password for svn access
-my  $SHOWVERSION            = "";      # show version and exit
+our $VERSION                = "0.10.0"; # this script version number
+my  $CONFIG_FILE            = "";       # use of a config file
+my  $DEBUG                  = "";       # enable some debugging output
+my  $DIRECTORY              = "";       # the directory to analyze
+my  $DIRECTORYTYPE          = "";       # the type of directory: file, svn
+my  $EXTENSION              = "";       # extensions to anayze (without .)
+my  $HELP                   = "";       # print this help and exit the script
+my  $LANGUAGE               = "";       # the language of files to analyze
+my  $LEVEL1_MINUTES         = "";       # overwrite default values for level 1
+my  $LEVEL2_MINUTES         = "";       # overwrite default values for level 2
+my  $LEVEL3_MINUTES         = "";       # overwrite default values for level 3
+my  $LEVEL4_MINUTES         = "";       # overwrite default values for level 4
 my  %MIGRATION_COST = (
-     "LVL1" => 1,                      # time in minutes to migrate an
-     "LVL2" => 4,                      # oracle instruction for all 4 levels
+     "LVL1" => 1,                       # time in minutes to migrate an
+     "LVL2" => 4,                       # oracle instruction for all 4 levels
      "LVL3" => 8,                      
      "LVL4" => 16,                     
 );
+my  $MINUTES_PER_WORKDAY    = "";       # amount of work per day
+my  $ORAFCE                 = "";       # will the migration use orafce ?
+my  $OUTPUT_CSV             = "";       # the output listing (csv format)
+my  $OUTPUT_DIRECTORY       = "";       # the output directory
+my  $OUTPUT_FILE            = "";       # the output report (html)
+my  $OUTPUT_FORMAT          = "html";   # report's format (txt, html or minimal)
+my  $PASSWORD               = "";       # password for svn access
+my  $QUIET                  = "";       # silence the script
+my  $SHOWVERSION            = "";       # show version and exit
+my  $TAGFILE                = "";       # tag files with special comments ?
+my  $USERNAME               = "";       # username for svn access
 
-my  $user_name              = "";      # username for svn access 
-my  $user_password          = "";      # password for svn access 
-my  $extensions_to_analyze  = "*";     # which extensions to analyze
-my  $dir_to_analyze         = ".";     # default directory to analyze
-my  $directory_type         = "file";  # we analyze local files by default
 my  $chosen_language        = "";
-my  $workday_minutes        = 360;     # by default, 6h of work per day 
-my  $csv_file_output        = "";      # the csv file to log instructions
+my  $csv_file_output        = "";       # the csv file to log instructions
+my  $dir_to_analyze         = ".";      # default directory to analyze
+my  $directory_output       = ".";
+my  $directory_type         = "file";   # we analyze local files by default
+my  $extensions_to_analyze  = "*";      # which extensions to analyze
+my  $file_config            = "";       # name of the configuration file
 my  $file_output            = "estimation.html"; # our report file name
 my  $file_output_handle;
-my  $directory_output       = ".";
-my  $instruction_dataset    = "[";     # the javascript dataset for datatables
+my  $instruction_dataset    = "[";      # the javascript dataset for datatables
+my  $quiet_exec             = 0;        # don't output to stdout
 my  ( $day, $month, $year ) = (localtime)[ 3, 4, 5 ];
 my  $today = sprintf( "%02d/%02d/%04d", $day, $month + 1, $year + 1900 );
+my  $user_name              = "";       # username for svn access 
+my  $user_password          = "";       # password for svn access 
+my  $workday_minutes        = 360;      # by default, 6h of work per day 
 my  %oracle_functions_list_ = ();
-my  $quiet_exec             = 0;       # don't output to stdout
 
 # each keyword will be matched with a corresponding regex - level 1
 my %oracle_functions_list_1 = (
@@ -537,6 +533,7 @@ $oracle_functions_list_{4} = \%oracle_functions_list_4;
 # Command line arguments
 
 GetOptions(
+    'c|config-file=s'       => \$CONFIG_FILE,
     'C|csv-output=s'        => \$OUTPUT_CSV,
     'd|directory=s'         => \$DIRECTORY,
     'D|directorytype=s'     => \$DIRECTORYTYPE,
@@ -565,8 +562,41 @@ GetOptions(
 
 sub options_handling {
 
+    my %config_file;
+
     if ($HELP) {
-        &help_utilisation();
+        help_utilisation();
+    }
+
+    if ($CONFIG_FILE) {
+        my $conf = Config::General->new($CONFIG_FILE);
+        %config_file = $conf->getall;
+
+        if ($DEBUG) {
+            print STDERR "\nConfiguration file\n";
+            while (my ($key, $value) = each %config_file) {
+                 print STDERR "    - $key: $value\n";
+            }
+            print STDERR "End config\n\n";
+        }
+
+        $dir_to_analyze = $config_file{"directory"} if $config_file{"directory"};
+        $directory_type = $config_file{"directorytype"} if $config_file{"directorytype"};
+        $OUTPUT_FORMAT = $config_file{"format"} if $config_file{"format"};
+        $file_output = $config_file{"output-file"} if $config_file{"output-file"};
+        $directory_output = $config_file{"output-directory"} if $config_file{"output-directory"};
+        $csv_file_output = $config_file{"csv-output"} if $config_file{"csv-output"};
+        $ORAFCE = $config_file{"orafce"} if ($config_file{"orafce"} && $config_file{"orafce"} eq 'on');
+        $TAGFILE = $config_file{"tagfile"} if ($config_file{"tagfile"} && $config_file{"tagfile"} eq 'on');
+        $LEVEL1_MINUTES = $config_file{"level1-minutes"} if $config_file{"level1-minutes"};
+        $LEVEL2_MINUTES = $config_file{"level2-minutes"} if $config_file{"level2-minutes"};
+        $LEVEL3_MINUTES = $config_file{"level3-minutes"} if $config_file{"level3-minutes"};
+        $LEVEL4_MINUTES = $config_file{"level4-minutes"} if $config_file{"level4-minutes"};
+        $workday_minutes = $config_file{"minutes-per-workday"} if $config_file{"minutes-per-workday"};
+        $user_name = $config_file{"username"} if $config_file{"username"};
+        $user_password = $config_file{"password"} if $config_file{"password"};
+        $extensions_to_analyze = $config_file{"extension"} if $config_file{"extension"};
+        $chosen_language = $config_file{"language"} if $config_file{"language"};
     }
 
     if ($DIRECTORYTYPE) {
@@ -577,18 +607,18 @@ sub options_handling {
 
     # Add a "/" at the end of the directory if needed
     if ($DIRECTORY) {
-        if ( substr( $DIRECTORY, -1 ) eq "\/" ) {
-            $dir_to_analyze = $DIRECTORY;
-        }
-        else { $dir_to_analyze = $DIRECTORY . "/"; }
+        $dir_to_analyze = $DIRECTORY;
     }
+    if ( substr( $dir_to_analyze, -1 ) ne "\/" ) {
+        $dir_to_analyze .= "/"; 
+    } 
 
     if ($EXTENSION) {
         $extensions_to_analyze = $EXTENSION;
     }
 
     if ( ( $OUTPUT_FORMAT ne "txt" ) and ( $OUTPUT_FORMAT ne "html" ) and 
-	    ( $OUTPUT_FORMAT ne "minimal" ) ) {
+         ( $OUTPUT_FORMAT ne "minimal" ) ) {
         print STDERR "Unrecognized output format!\n";
         exit(2);
     }
@@ -659,9 +689,14 @@ sub options_handling {
     }
     if ($SHOWVERSION) {
         print "Version: $VERSION\n";
-	exit(1);
+        exit(1);
     }
 
+    # if ( ! $CONFIG_FILE && ( $extensions_to_analyze xor $chosen_language)) {
+    if ( ! $CONFIG_FILE && ( $EXTENSION xor $LANGUAGE)) {
+        print STDERR "Without a config file, both extensions and language need to be provided\n";
+        exit(2);
+    }
     if ( $PASSWORD xor $USERNAME ) {
         print STDERR "Both username and password must be provided\n";
         exit(2);
@@ -683,15 +718,17 @@ sub options_handling {
 
 ################################################################################
 sub help_utilisation {
+
     print qq{
 Usage: code2pg [--option value]
 
   A source code analyzer that estimates an Oracle to PostgreSQL migration.
 
+  -c, --config-file file   : a global code2pg configuration file
   -C, --csv-output file    : Oracle keywords will be redirected to this csv file
   -d, --directory dir      : the source code directory to analyze
   -D, --directorytype type : the type of directory to analyze (svn|file)
-  -e, --extension ext      : extensions of files to analyze
+  -e, --extension ext      : extensions of files to analyze. 
   -f, --format form        : report will be generated in the specified format
                              form = [txt|html|minimal]. Will be html by default
   -h, --help               : print this help
@@ -711,7 +748,7 @@ Usage: code2pg [--option value]
   -r, --orafce             : will the migration use orafce compatibility layer
   -T, --tagfiles           : if enabled, local source files will be tagged 
                              directly for Oracle instructions. 
-			     Important: use on a copy of your files.
+                             Important: use on a copy of your files.
   -u, --username user      : username for SVN access
   -v, --version            : show script version and exit
 
@@ -720,6 +757,7 @@ Examples:
   ./code2pg -e java -l java
   ./code2pg -e properties -l plsql -d /tmp/project -o project_estimate.html 
   ./code2pg -D svn -d https://mysvnrepo/project/trunk -l java -e java -f txt
+  ./code2pg -c myconfigfile.conf
 
 };
     exit(1);
@@ -737,7 +775,7 @@ sub read_lib {
     while (my $d = <DATA>) {
         if ($d =~ /^LIBFILE: ([^\s]+)/) {
             $file = $1;
-	    print STDERR "\nlibfile = $file\n" if ($DEBUG);
+            print STDERR "libfile = $file\n" if ($DEBUG);
             if ($cssorscript eq 'js') {
                 $lib .= '</script>';
             }
@@ -807,7 +845,7 @@ sub terminal_output {
     my $tbl_output = Text::ASCIITable->new();
     $tbl_output->setCols(
         '',
-	'Number of instructions',
+        'Number of instructions',
         'Time/instruction',
         'Estimated time (minutes)',
         'Man-days'
@@ -963,9 +1001,9 @@ sub html_output {
 
     $ds_time_by_inst .= qq (],
     datasets: [{
-	label: "Mandays by instructions",
-	backgroundColor: "#c10752" ,
-	data: [ );
+        label: "Mandays by instructions",
+        backgroundColor: "#c10752" ,
+        data: [ );
 
     foreach (@vals_md_inst) {
         $ds_time_by_inst .= "$_,";
@@ -980,9 +1018,9 @@ sub html_output {
     ###########################################################################
     # Chart: Number of instructions
     my %niv_full = (defined $niv_{1} ? %{$niv_{1}} : (),
-	            defined $niv_{2} ? %{$niv_{2}} : (),
-		    defined $niv_{3} ? %{$niv_{3}} : (),
-		    defined $niv_{4} ? %{$niv_{4}} : ());
+                    defined $niv_{2} ? %{$niv_{2}} : (),
+                    defined $niv_{3} ? %{$niv_{3}} : (),
+                    defined $niv_{4} ? %{$niv_{4}} : ());
     my @keys_nb_of_inst = sort { $niv_full{$b} <=> $niv_full{$a} } keys(%niv_full);
     my @vals_nb_of_inst = @niv_full{@keys_nb_of_inst};
 
@@ -994,9 +1032,9 @@ sub html_output {
 
     $ds_nb_of_inst .= qq (],
     datasets: [{
-	label: "Number of instructions",
-	backgroundColor: "#078dc1" ,
-	data: [ );
+        label: "Number of instructions",
+        backgroundColor: "#078dc1" ,
+        data: [ );
 
     foreach (@vals_nb_of_inst) {
         $ds_nb_of_inst .= "$_,";
@@ -1019,11 +1057,10 @@ sub html_output {
     $ds_diff_by_level .="labels: [\"Level1\",\"Level2\",\"Level3\",\"Level4\"]";
     $ds_diff_by_level .= qq (,
     datasets: [{
-	label: "Man days by difficulty level",
-	backgroundColor: [ "#00c3ff", "#00d16f", "#d1bf00", "#d15000"],
-	data: [$n1, $n2, $n3, $n4]
-
-	}
+        label: "Man days by difficulty level",
+        backgroundColor: [ "#00c3ff", "#00d16f", "#d1bf00", "#d15000"],
+        data: [$n1, $n2, $n3, $n4]
+        }
     ]);
     ###########################################################################
     $html = qq{<HTML>
@@ -1032,7 +1069,7 @@ sub html_output {
 <title>$title</title>
 <meta charset="utf-8"/>
 };
-    $html .= &read_lib();
+    $html .= read_lib();
 
 # <script src="tools/Chart.bundle.min.js"></script>
 # <script type="text/javascript" src="tools/js/jquery.js"></script>
@@ -1053,8 +1090,8 @@ th, td {
 }
 
 * {
-	font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
-	color: #666666;
+        font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+        color: #666666;
 }
 
 .leftgraph {
@@ -1266,49 +1303,49 @@ tr:nth-child(even){background-color: #fbfbfb}
     };
 
     $html .= qq {
-	<script>
-	    var ctx2 = document.getElementById('myChartInstructionsManDays').getContext('2d');
-	    var chart2 = new Chart(ctx2, {
-    	        type: 'horizontalBar',
-		data: {
+        <script>
+            var ctx2 = document.getElementById('myChartInstructionsManDays').getContext('2d');
+            var chart2 = new Chart(ctx2, {
+                type: 'horizontalBar',
+                data: {
                     $ds_time_by_inst
-		},
-		options: {
-		    title: { display: true, text: 'Time in days by instruction'}
-		 }
-		});
-	</script>
+            },
+            options: {
+                title: { display: true, text: 'Time in days by instruction'}
+             }
+            });
+        </script>
     };
     $html .= qq {
-	<script>
-	    var ctx2 = document.getElementById('myChartInstructionsNumber').getContext('2d');
-	    var chart2 = new Chart(ctx2, {
-    	        type: 'horizontalBar',
-		data: {
+        <script>
+            var ctx2 = document.getElementById('myChartInstructionsNumber').getContext('2d');
+            var chart2 = new Chart(ctx2, {
+                type: 'horizontalBar',
+                data: {
                     $ds_nb_of_inst
-		},
-		options: {
-		    title: { display: true, text: 'Number of instructions'}
-		 }
-		});
-	</script>
+                },
+                options: {
+                    title: { display: true, text: 'Number of instructions'}
+                 }
+                });
+       </script>
     };
 
 
     $html .= qq {
-	<script>
-		var ctx  = document.getElementById('myChartDifficultyLevel').getContext('2d');
-		var chart = new Chart(ctx, {
-			type: 'pie',
-			data: {
-			    $ds_diff_by_level
-			},
-			options: {
-					title: { display: true, text: 'Difficulty by level'}
-				 }
-		});
-	</script>
-	};
+        <script>
+                var ctx  = document.getElementById('myChartDifficultyLevel').getContext('2d');
+                var chart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        $ds_diff_by_level
+                    },
+                    options: {
+                        title: { display: true, text: 'Difficulty by level'}
+                    }
+                });
+        </script>
+    };
     $html .= qq{
 </BODY>
 </HTML>};
@@ -1329,8 +1366,7 @@ sub print_output_file {
     $file_content =~ s/\r//g;
 
     print STDERR "\nWriting to csv output...\n" if ($DEBUG);
-    print {$fh_n} "difficulty;file;line number;instruction;extract;\n";
-    print {$fh_n} $file_content;
+    print {$fh_n} "difficulty;file;line number;instruction;extract;\n$file_content";
     print STDERR "\nWriting complete.\n" if ($DEBUG);
 
     close $fh_n;
@@ -1343,7 +1379,7 @@ sub get_file_content {
 
     my $f = shift; # current file we're working on
     my $fc ="";
-    print STDERR "\nReading file: $f\n" if ($DEBUG);
+    print STDERR "    - current file: $f\n" if ($DEBUG);
 
     # directory access
     if ( $directory_type eq "file" ) {
@@ -1359,6 +1395,7 @@ sub get_file_content {
             $svncommand = "cat '$dir_to_analyze$f'";
         }
         chomp($svncommand);
+        print STDERR "      svn command: $svncommand\n" if ($DEBUG);
 
         $fc = `svn $svncommand`;
     }
@@ -1371,6 +1408,8 @@ sub get_file_content {
 sub get_file_list {
 
     my @f = shift; # current file we're working on
+
+    print STDERR "Now parsing $directory_type type files\n" if ($DEBUG);
 
     if ( $directory_type eq "file" ) {
         @f = File::Find::Rule->file()->name( "*." . $extensions_to_analyze )
@@ -1391,8 +1430,8 @@ sub get_file_list {
     return @f;
 }
 
-&options_handling();
-&main();
+options_handling();
+main();
 
 ################################################################################
 sub main {
@@ -1418,7 +1457,7 @@ sub main {
     $matching_lvl_{4} = ();
 
     print "Analyzing " if (!$quiet_exec);
-    @files = &get_file_list();
+    @files = get_file_list();
 
     foreach ( 1 .. 4 ) {
         $count_lvl_{$_} = 0;
@@ -1461,19 +1500,19 @@ sub main {
         my $file_content;
         my $line_number  = 0;
         $modified_file   = 0;
-	$file_idx       += 1;
+        $file_idx       += 1;
 
-        $file_content = &get_file_content($file);
+        $file_content = get_file_content($file);
 
-	# Poor man progress bar
-	print ("\b" x (14 + scalar(@files))) if (!$quiet_exec);
-	print ("Analyzing [$file_idx / " . scalar(@files) . "]") if (!$quiet_exec);
+        # Poor man progress bar
+        print ("\b" x (14 + scalar(@files))) if (!$quiet_exec);
+        print ("Analyzing [$file_idx / " . scalar(@files) . "]") if (!$quiet_exec);
 
         foreach my $level ( 1 .. 4 ) {
             foreach my $element ( keys %{$oracle_functions_list_{$level}} ) { 
-		$current_regex = $regex_bef . $oracle_functions_list_{$level}{$element} . $regex_aft;
-		
-		# the following regex matching is currently the program bottleneck
+                $current_regex = $regex_bef . $oracle_functions_list_{$level}{$element} . $regex_aft;
+                
+                # the following regex matching is currently the program bottleneck
                 while ( $file_content =~ /$current_regex/gip)
                 {
                     # print "I found ${^MATCH} at line $_ with $. \n";
@@ -1486,10 +1525,10 @@ sub main {
                     if ($OUTPUT_CSV) {
                         $listing_inst .= "$level;$file;$line_number;$element;${^MATCH};\n";
                     }
-		    if ($OUTPUT_FORMAT eq "html") {
-			my $mymatch = quotemeta ${^MATCH};
+                    if ($OUTPUT_FORMAT eq "html") {
+                        my $mymatch = quotemeta ${^MATCH};
                         $instruction_dataset .= "\n\t['$level', '$file', '$line_number', '$element', '$mymatch' ],";
-		    }
+                    }
 
                     # use edit-file ?
                     if ($TAGFILE and ($directory_type eq "file") ) {
@@ -1534,16 +1573,16 @@ sub main {
 
     # we write to our csv output file
     if ($OUTPUT_CSV) {
-        &print_output_file ($listing_inst);
+        print_output_file ($listing_inst);
     }
 
     # Printing the report
     if ($OUTPUT_FORMAT eq "html") {
-	    $instruction_dataset =~ s/,$/]/; # remove trailing , and close the set
+        $instruction_dataset =~ s/,$/]/; # remove trailing , and close the set
     }
 
     if ( $OUTPUT_FORMAT eq "txt" ) {
-        &terminal_output(
+        terminal_output(
             \%matching_lvl_,          $count_lvl_{1},
             $count_lvl_{2},           $count_lvl_{3},
             $count_lvl_{4},           $new_nb_fct_total,
@@ -1553,7 +1592,7 @@ sub main {
         );
     }
     elsif ( $OUTPUT_FORMAT eq "html" ) {
-        &html_output(
+        html_output(
             \%matching_lvl_,          $count_lvl_{1},
             $count_lvl_{2},           $count_lvl_{3},
             $count_lvl_{4},           $new_nb_fct_total,
@@ -1578,7 +1617,7 @@ sub main {
 }
 
 #####################################################################
-# Generate man and html pages with podselect, pod2man, ...
+# Generate man and html pages with perldoc, podselect, pod2man, ...
 #####################################################################
 
 =head1 NAME
@@ -1589,10 +1628,11 @@ to PostgreSQL for application code.
 =head1 SYNOPSIS
 
 Usage: code2pg
+[--config-file string]
 [--csv-output string]
 [--directory string]
 [--directorytype string]
---extension string
+[--extension string]
 [--format string]
 --language string
 [--level1-minutes integer]
@@ -1628,6 +1668,13 @@ instructions.
 
 =over
 
+=item B<-c> , B<--config-file> string
+
+This configuration file will contain all user configurable switches. An example 
+file is given (code2pg.conf). If a parameter is present in both config file and 
+command line, the command line will take precedence. If no configuration file 
+is given, at least the extension and language parameters are needed.
+
 =item B<-C> , B<--csv-output> string
 
 Oracle keywords will be redirected to this csv file. This file could be used to 
@@ -1647,7 +1694,8 @@ Defaults to file.
 =item B<-e>, B<--extension> string
 
 Which file extensions will be analyzed in the specified directory. No preceding
-dot should be used.
+dot should be used. This should be set together with I<language> when no 
+configuration file is provided.
 
 =item B<-f> , B<--format> string
 
@@ -1660,7 +1708,8 @@ Prints a short help.
 
 =item B<-l> , B<--language> string
 
-The chosen language calling the RDBMS.
+The chosen language calling the RDBMS. This should be set together with 
+I<extension> when no configuration file is provided.
 lang = [java|proc|cobol|javascript|dotnet|plsql|...]
 
 =item B<--level1-minutes > integer
