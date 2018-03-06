@@ -19,18 +19,18 @@ It can:
 Prerequisites :
 -------------
 
-`code2pg` is a standalone script. It requires the `File::Slurp`, `File::Find::Rule` and `Text::ASCIITable` Perl modules.
+`code2pg` is a standalone script. It requires the `File::Slurp`, `File::Find::Rule`, `Text::ASCIITable` and `Config::General` Perl modules.
 
 On a Centos box, it can be installed this way:
 
 ```
-yum install perl-Text-ASCIITable perl-File-Slurp perl-File-Find-Rule
+yum install perl-Text-ASCIITable perl-File-Slurp perl-File-Find-Rule perl-Config-General
 ```
 
 On a Debian box, the packages could be installed with:
 
 ```
-apt-get install libtext-asciitable-perl libfile-slurp-perl libfile-find-rule-perl
+apt-get install libtext-asciitable-perl libfile-slurp-perl libfile-find-rule-perl libconfig-general-perl
 ```
 
 The script has been tested on Windows with Strawberry Perl (v5.24.3) with the proper modules installed (the CPAN client can be used for this). A warning is issued though as `wc` is usually not recognized.
@@ -68,6 +68,10 @@ Besides the complete [generated documentation](https://github.com/societe-genera
 - analyze java files in a SVN repository and generate a text report:
 ```
 ./code2pg -D svn -d https://mysvnrepo/project/trunk -l java -e java -f txt
+```
+- use a configuration file
+```
+./code2pg -c code2pg.conf
 ```
 
 Report examples
