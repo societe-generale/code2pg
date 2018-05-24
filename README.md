@@ -19,9 +19,9 @@ It can:
 Prerequisites :
 -------------
 
-`code2pg` is a standalone script. It requires the `File::Slurp`, `File::Find::Rule`, `Text::ASCIITable` and `Config::General` Perl modules.
+`code2pg` is a standalone script. It requires the `File::Slurp`, `File::Find::Rule`, `Text::ASCIITable` and `Config::General` Perl modules. They can be obtained either from a CPAN client or from your distribution.
 
-On a Centos box, it can be installed this way:
+On a Centos 7(+) box, it can be installed this way:
 
 ```
 sudo yum install perl-Text-ASCIITable perl-File-Slurp perl-File-Find-Rule perl-Config-General
