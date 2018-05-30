@@ -2,10 +2,10 @@
 
 ################################################################################
 #
-# code2pg v0.10.0 - code migration estimation from Oracle to PostgreSQL
+# code2pg v0.10.1 - code migration estimation from Oracle to PostgreSQL
 #
-# Author: Anthony Nowocien anthony.nowocien-ext@socgen.com
-# Copyright 2017 Société Générale
+# Author: Anthony Nowocien anthony.nowocien@socgen.com
+# Copyright 2018 Société Générale
 #
 # This program is licenced under the 2-Clause BSD License.
 #
@@ -80,7 +80,7 @@ my %REGEX_AFTER = (
 ################################################################################
 # Internal variables and constants
 
-our $VERSION                = "0.10.0"; # this script version number
+our $VERSION                = "0.10.1"; # this script version number
 my  $CONFIG_FILE            = "";       # use of a config file
 my  $DEBUG                  = "";       # enable some debugging output
 my  $DIRECTORY              = "";       # the directory to analyze
@@ -106,11 +106,13 @@ my  $OUTPUT_FILE            = "";       # the output report (html)
 my  $OUTPUT_FORMAT          = "html";   # report's format (txt, html or minimal)
 my  $PASSWORD               = "";       # password for svn access
 my  $QUIET                  = "";       # silence the script
+my  $RDBMS                  = "";       # the source rdbms instructions
 my  $SHOWVERSION            = "";       # show version and exit
 my  $TAGFILE                = "";       # tag files with special comments ?
 my  $USERNAME               = "";       # username for svn access
 
 my  $chosen_language        = "";
+my  $chosen_rdbms           = "oracle"; # the source rdbms instructions
 my  $csv_file_output        = "";       # the csv file to log instructions
 my  $dir_to_analyze         = ".";      # default directory to analyze
 my  $directory_output       = ".";
@@ -126,7 +128,7 @@ my  $today = sprintf( "%02d/%02d/%04d", $day, $month + 1, $year + 1900 );
 my  $user_name              = "";       # username for svn access 
 my  $user_password          = "";       # password for svn access 
 my  $workday_minutes        = 360;      # by default, 6h of work per day 
-my  %oracle_functions_list_ = ();
+my  %rdbms_functions_list_  = ();       # functions ordered by diff. level
 
 # each keyword will be matched with a corresponding regex - level 1
 my %oracle_functions_list_1 = (
@@ -524,10 +526,6 @@ my %list_orafce_functions = (
     'TMPDIR'              => '\bTMPDIR\b',
 );
 
-$oracle_functions_list_{1} = \%oracle_functions_list_1;
-$oracle_functions_list_{2} = \%oracle_functions_list_2;
-$oracle_functions_list_{3} = \%oracle_functions_list_3;
-$oracle_functions_list_{4} = \%oracle_functions_list_4;
 
 ################################################################################
 # Command line arguments
@@ -545,6 +543,7 @@ GetOptions(
     'O|output-directory=s'  => \$OUTPUT_DIRECTORY,
     'p|password=s'          => \$PASSWORD,
     'q|quiet'               => \$QUIET,
+    'rdbms'                 => \$RDBMS,
     'r|orafce'              => \$ORAFCE,
     'T|tagfiles'            => \$TAGFILE,
     'u|username=s'          => \$USERNAME,
@@ -586,8 +585,10 @@ sub options_handling {
         $file_output = $config_file{"output-file"} if $config_file{"output-file"};
         $directory_output = $config_file{"output-directory"} if $config_file{"output-directory"};
         $csv_file_output = $config_file{"csv-output"} if $config_file{"csv-output"};
-        $ORAFCE = $config_file{"orafce"} if ($config_file{"orafce"} && $config_file{"orafce"} eq 'on');
-        $TAGFILE = $config_file{"tagfile"} if ($config_file{"tagfile"} && $config_file{"tagfile"} eq 'on');
+	# $ORAFCE = $config_file{"orafce"} if ($config_file{"orafce"} && $config_file{"orafce"} eq 'on');
+        $ORAFCE = ($config_file{"orafce"} eq 'on') if ($config_file{"orafce"}) ;
+        # $TAGFILE = $config_file{"tagfile"} if ($config_file{"tagfile"} && $config_file{"tagfile"} eq 'on');
+        $TAGFILE = ($config_file{"tagfile"} eq 'on') if ($config_file{"tagfile"});
         $LEVEL1_MINUTES = $config_file{"level1-minutes"} if $config_file{"level1-minutes"};
         $LEVEL2_MINUTES = $config_file{"level2-minutes"} if $config_file{"level2-minutes"};
         $LEVEL3_MINUTES = $config_file{"level3-minutes"} if $config_file{"level3-minutes"};
@@ -595,8 +596,20 @@ sub options_handling {
         $workday_minutes = $config_file{"minutes-per-workday"} if $config_file{"minutes-per-workday"};
         $user_name = $config_file{"username"} if $config_file{"username"};
         $user_password = $config_file{"password"} if $config_file{"password"};
-        $extensions_to_analyze = $config_file{"extension"} if $config_file{"extension"};
-        $chosen_language = $config_file{"language"} if $config_file{"language"};
+        if ($config_file{"language"}) {
+	    $chosen_language = $config_file{"language"};
+        } 
+	else {
+            print "Language parameter needs to be set in the configuration file\n";
+	    exit(2);
+	}
+        if ($config_file{"extension"}) {
+	    $extensions_to_analyze = $config_file{"extension"};
+        } 
+	else {
+            print "Extension parameter needs to be set in the configuration file\n";
+	    exit(2);
+	}
     }
 
     if ($DIRECTORYTYPE) {
@@ -640,31 +653,30 @@ sub options_handling {
 
     # We should also apply the language ponderation
     if ($LANGUAGE) {
-        if    ( $LANGUAGE eq "java" )       { $chosen_language = $LANGUAGE; }
-        elsif ( $LANGUAGE eq "proc" )       { $chosen_language = $LANGUAGE; }
-        elsif ( $LANGUAGE eq "cobol" )      { $chosen_language = $LANGUAGE; }
-        elsif ( $LANGUAGE eq "javascript" ) { $chosen_language = $LANGUAGE; }
-        elsif ( $LANGUAGE eq "dotnet" )     { $chosen_language = $LANGUAGE; }
-        elsif ( $LANGUAGE eq "jsp" )        { $chosen_language = $LANGUAGE; }
-        elsif ( $LANGUAGE eq "plsql" )      { $chosen_language = $LANGUAGE; }
-        else { print STDERR "Unrecognized language!\n"; exit(2) }
+        if ( $LANGUAGE ~~ ["java", "proc", "cobol", "javascript", "dotnet", "jsp", "plsql"] ) {
+	    $chosen_language = $LANGUAGE; 
+        }
+        else {
+	    print STDERR "Unrecognized language!\n";
+	    exit(2) 
+        }
     }
 
     # Easier migration if orafce is used
     # we will remove from all lists elements found in the orafce hash
     if ($ORAFCE) {
         foreach my $item ( keys %list_orafce_functions ) {
-            if ( exists $oracle_functions_list_{1}{$item} ) {
-                delete $oracle_functions_list_{1}{$item};
+            if ( exists $rdbms_functions_list_{1}{$item} ) {
+                delete $rdbms_functions_list_{1}{$item};
             }
-            if ( exists $oracle_functions_list_{2}{$item} ) {
-                delete $oracle_functions_list_{2}{$item};
+            if ( exists $rdbms_functions_list_{2}{$item} ) {
+                delete $rdbms_functions_list_{2}{$item};
             }
-            if ( exists $oracle_functions_list_{3}{$item} ) {
-                delete $oracle_functions_list_{3}{$item};
+            if ( exists $rdbms_functions_list_{3}{$item} ) {
+                delete $rdbms_functions_list_{3}{$item};
             }
-            if ( exists $oracle_functions_list_{4}{$item} ) {
-                delete $oracle_functions_list_{4}{$item};
+            if ( exists $rdbms_functions_list_{4}{$item} ) {
+                delete $rdbms_functions_list_{4}{$item};
             }
         }
     }
@@ -706,6 +718,21 @@ sub options_handling {
         $user_name     = $USERNAME;
     }
 
+    if (($RDBMS eq 'oracle') or ($RDBMS eq '')) {
+        $chosen_rdbms = 'oracle';
+    }
+    else {
+        print STDERR "Unrecognized rdbms ! Possible value(s): (oracle)\n";
+	exit(2);
+    }
+
+    if ($chosen_rdbms eq 'oracle') {
+	$rdbms_functions_list_{1} = \%oracle_functions_list_1;
+        $rdbms_functions_list_{2} = \%oracle_functions_list_2;
+        $rdbms_functions_list_{3} = \%oracle_functions_list_3;
+        $rdbms_functions_list_{4} = \%oracle_functions_list_4;
+    }
+
     # we open a file handle but it gets closed very far in the code
     # this should be improved
     my $fo = $directory_output . "/" . $file_output;
@@ -745,6 +772,8 @@ Usage: code2pg [--option value]
   -p, --password pwd       : password for SVN access
   -q, --quiet              : do not output to stdout. Useful for batch 
                              processing and redirection.
+  --rdbms rdbms            : from which RDBMS the migration will take place.
+                             Only Oracle is possible now.  (oracle by default)
   -r, --orafce             : will the migration use orafce compatibility layer
   -T, --tagfiles           : if enabled, local source files will be tagged 
                              directly for Oracle instructions. 
@@ -1509,11 +1538,12 @@ sub main {
         print ("Analyzing [$file_idx / " . scalar(@files) . "]") if (!$quiet_exec);
 
         foreach my $level ( 1 .. 4 ) {
-            foreach my $element ( keys %{$oracle_functions_list_{$level}} ) { 
-                $current_regex = $regex_bef . $oracle_functions_list_{$level}{$element} . $regex_aft;
+            foreach my $element ( keys %{$rdbms_functions_list_{$level}} ) { 
+                $current_regex = $regex_bef . $rdbms_functions_list_{$level}{$element} . $regex_aft;
                 
                 # the following regex matching is currently the program bottleneck
-                while ( $file_content =~ /$current_regex/gip)
+		while ( $file_content =~ /$current_regex/gip) 
+		# while ( $file_content =~ /$current_regex/gis)
                 {
                     # print "I found ${^MATCH} at line $_ with $. \n";
                     $count_lvl_{$level} += 1;
@@ -1532,6 +1562,11 @@ sub main {
 
                     # use edit-file ?
                     if ($TAGFILE and ($directory_type eq "file") ) {
+                        print "$line_number\n";
+                        print "$LANGUAGE_COMMENTS_BEGIN{$chosen_language}\n";
+                        print "$element\n";
+                        print "$LANGUAGE_COMMENTS_END{$chosen_language} \n";
+
                         my $sed_command = '\''
                           . $line_number
                           . ' s/$/ '
@@ -1642,6 +1677,8 @@ Usage: code2pg
 [--minutes-per-workday integer]
 [--output-file] string
 [--output-directory string]
+  --rdbms rdbms            : from which RDBMS the migration will take place.
+                             Only Oracle is possible now.  (oracle by default)
 [--orafce]
 [--password string]
 [--quiet]
@@ -1740,6 +1777,13 @@ would be to use a proper extension depending on the type of report.
 =item B<-O> , B<--output-directory> string
 
 Specifies in which directory the report will be saved.
+
+=item B<--rdbms> string
+
+Migration will be from the specified RDBMS to PostgreSQL. So far, only 
+Oracle is supported. 
+
+rdbms = [oracle]
 
 =item B<-r> , B<--orafce>
 
