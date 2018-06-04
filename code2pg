@@ -222,13 +222,16 @@ my %oracle_functions_list_3 = (
     'HINTS'             => '\/\*\+',
     'ADD_MONTHS'        => '\bADD_MONTHS\s*\(',
     'BITAND'            => '\bBITAND\s*\(',
+    'BULK COLLECT'      => '\bBULK\s*COLLECT\b',
     'CAST'              => '\bCAST\s*\(',
     'CHR'               => '\bCHR\s*\(',
+    'CURSOR'            => '\bCURSOR\b',
     'DBTIMEZONE'        => '\bDBTIMEZONE\b',
     'DECODE'            => '\bDECODE\s*\(',
     'DENSE_RANK'        => '\bDENSE_RANK\s*\(',
     'EXTRACT'           => '\bEXTRACT\s*\(',
     'FIRST'             => '\b(DENSE_RANK|NULLS)\s*FIRST\b',
+    'FORALL'            => '\bFORALL\b',
     'GREATEST'          => '\bGREATEST\s*\(',
     'IS NAN'            => '\bIS\s+NAN\b',
     'IS NOT NAN'        => '\bIS\s+NOT\s+NAN\b',
@@ -666,16 +669,21 @@ sub options_handling {
     # we will remove from all lists elements found in the orafce hash
     if ($ORAFCE) {
         foreach my $item ( keys %list_orafce_functions ) {
+	    print "orafce - item: $item\n";
             if ( exists $rdbms_functions_list_{1}{$item} ) {
+		print "deleted $rdbms_functions_list_{1}{$item}\n" if ($DEBUG);
                 delete $rdbms_functions_list_{1}{$item};
             }
             if ( exists $rdbms_functions_list_{2}{$item} ) {
+		print "deleted $rdbms_functions_list_{2}{$item}\n" if ($DEBUG);
                 delete $rdbms_functions_list_{2}{$item};
             }
             if ( exists $rdbms_functions_list_{3}{$item} ) {
+		print "deleted $rdbms_functions_list_{3}{$item}\n" if ($DEBUG);
                 delete $rdbms_functions_list_{3}{$item};
             }
             if ( exists $rdbms_functions_list_{4}{$item} ) {
+		print "deleted $rdbms_functions_list_{4}{$item}\n" if ($DEBUG);
                 delete $rdbms_functions_list_{4}{$item};
             }
         }
@@ -797,7 +805,7 @@ Examples:
 # style portion
 sub read_lib {
     my $lib = "";
-    my $cssorscript = "";
+    my $cssorscript = ""; # is the lib file a css or a js ?
     my $file = "";
 
     # This could do with a rewrite...
@@ -826,6 +834,7 @@ sub read_lib {
         $lib .= $cl ;
     }
 
+    # We add the last closing tag 
     if ($cssorscript eq 'js') {
         $lib .= '</script>';
     }
