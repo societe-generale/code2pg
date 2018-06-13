@@ -2,7 +2,7 @@
 
 ################################################################################
 #
-# code2pg v0.10.1 - code migration estimation from Oracle to PostgreSQL
+# code2pg v0.10.2 - code migration estimation from Oracle to PostgreSQL
 #
 # Author: Anthony Nowocien anthony.nowocien@socgen.com
 # Copyright 2018 Société Générale
@@ -36,8 +36,8 @@
 # Caution: code2pg needs extra packages:
 #          - Text::ASCIITable (only mandatory for text output)
 #          - File::Slurp
+#          - File::Find::Rule
 #          - Config::General
-# Centos: yum install perl-Text-ASCIITable perl-File-Slurp perl-Config-General
 
 use strict;
 use warnings;
@@ -80,7 +80,7 @@ my %REGEX_AFTER = (
 ################################################################################
 # Internal variables and constants
 
-our $VERSION                = "0.10.1"; # this script version number
+our $VERSION                = "0.10.2"; # this script version number
 my  $CONFIG_FILE            = "";       # use of a config file
 my  $DEBUG                  = "";       # enable some debugging output
 my  $DIRECTORY              = "";       # the directory to analyze
@@ -96,7 +96,7 @@ my  %MIGRATION_COST = (
      "LVL1" => 1,                       # time in minutes to migrate an
      "LVL2" => 4,                       # oracle instruction for all 4 levels
      "LVL3" => 8,                      
-     "LVL4" => 16,                     
+     "LVL4" => 20,                     
 );
 my  $MINUTES_PER_WORKDAY    = "";       # amount of work per day
 my  $ORAFCE                 = "";       # will the migration use orafce ?
@@ -114,7 +114,7 @@ my  $USERNAME               = "";       # username for svn access
 my  $chosen_language        = "";
 my  $chosen_rdbms           = "oracle"; # the source rdbms instructions
 my  $csv_file_output        = "";       # the csv file to log instructions
-my  $dir_to_analyze         = ".";      # default directory to analyze
+my  @dir_to_analyze         = (".");    # default directories to analyze
 my  $directory_output       = ".";
 my  $directory_type         = "file";   # we analyze local files by default
 my  $extensions_to_analyze  = "*";      # which extensions to analyze
@@ -225,7 +225,7 @@ my %oracle_functions_list_3 = (
     'BULK COLLECT'      => '\bBULK\s*COLLECT\b',
     'CAST'              => '\bCAST\s*\(',
     'CHR'               => '\bCHR\s*\(',
-    'CURSOR'            => '\bCURSOR\b',
+    'CURSOR'            => '\bCURSOR\s+', # correct it, too many false positives
     'DBTIMEZONE'        => '\bDBTIMEZONE\b',
     'DECODE'            => '\bDECODE\s*\(',
     'DENSE_RANK'        => '\bDENSE_RANK\s*\(',
@@ -314,10 +314,10 @@ my %oracle_functions_list_4 = (
     'LAST_DAY'                     => '\bLAST_DAY\s*\(',
     'LENGTH2'                      => '\bLENGTH2\s*\(',
     'LENGTH4'                      => '\bLENGTH4\s*\(',
-    'LEVEL'                        => '\bLEVEL\b', # Pseudo column. Grammar ?
-    'MAKE_REF'                     => '\bMAKE_RE\bF',
+    'LEVEL'                        => '(,|\s+)\bLEVEL\s*(,|FROM)', # Pseudo column
+    'MAKE_REF'                     => '\bMAKE_REF\b',
     'MEDIAN'                       => '\bMEDIAN\s*\(',
-    'MERGE'                        => '\bMERGE\b',  # MERGE [hint] INTO ...
+    'MERGE'                        => '\bMERGE\s+',  # MERGE [hint] INTO ...
     'MONTHS_BETWEEN'               => '\bMONTHS_BETWEEN\s*\(',
     'NEW_TIME'                     => '\bNEW_TIME\s*\(',
     'NEXT_DAY'                     => '\bNEXT_DAY\s*\(',
@@ -536,7 +536,7 @@ my %list_orafce_functions = (
 GetOptions(
     'c|config-file=s'       => \$CONFIG_FILE,
     'C|csv-output=s'        => \$OUTPUT_CSV,
-    'd|directory=s'         => \$DIRECTORY,
+    'd|directory=s@'        => \$DIRECTORY,
     'D|directorytype=s'     => \$DIRECTORYTYPE,
     'e|extension=s'         => \$EXTENSION,
     'f|format=s'            => \$OUTPUT_FORMAT,
@@ -581,8 +581,16 @@ sub options_handling {
             }
             print STDERR "End config\n\n";
         }
-
+        my $dir_to_analyze;
         $dir_to_analyze = $config_file{"directory"} if $config_file{"directory"};
+	# we can have multiple line of directory in the conf file
+	# we will make it an array
+	if (ref($dir_to_analyze) eq "ARRAY") {
+	    @dir_to_analyze = @{$dir_to_analyze};
+        }    
+	else {
+	    @dir_to_analyze = ($dir_to_analyze);
+        }
         $directory_type = $config_file{"directorytype"} if $config_file{"directorytype"};
         $OUTPUT_FORMAT = $config_file{"format"} if $config_file{"format"};
         $file_output = $config_file{"output-file"} if $config_file{"output-file"};
@@ -622,11 +630,15 @@ sub options_handling {
     }
 
     # Add a "/" at the end of the directory if needed
+    
     if ($DIRECTORY) {
-        $dir_to_analyze = $DIRECTORY;
-    }
-    if ( substr( $dir_to_analyze, -1 ) ne "\/" ) {
-        $dir_to_analyze .= "/"; 
+    	@dir_to_analyze = @$DIRECTORY;
+    };
+
+    for my $el (@dir_to_analyze) {
+        if ( substr( $el, -1 ) ne "\/" ) {
+            $el .= "/"; 
+	}
     } 
 
     if ($EXTENSION) {
@@ -665,29 +677,6 @@ sub options_handling {
         }
     }
 
-    # Easier migration if orafce is used
-    # we will remove from all lists elements found in the orafce hash
-    if ($ORAFCE) {
-        foreach my $item ( keys %list_orafce_functions ) {
-	    print "orafce - item: $item\n";
-            if ( exists $rdbms_functions_list_{1}{$item} ) {
-		print "deleted $rdbms_functions_list_{1}{$item}\n" if ($DEBUG);
-                delete $rdbms_functions_list_{1}{$item};
-            }
-            if ( exists $rdbms_functions_list_{2}{$item} ) {
-		print "deleted $rdbms_functions_list_{2}{$item}\n" if ($DEBUG);
-                delete $rdbms_functions_list_{2}{$item};
-            }
-            if ( exists $rdbms_functions_list_{3}{$item} ) {
-		print "deleted $rdbms_functions_list_{3}{$item}\n" if ($DEBUG);
-                delete $rdbms_functions_list_{3}{$item};
-            }
-            if ( exists $rdbms_functions_list_{4}{$item} ) {
-		print "deleted $rdbms_functions_list_{4}{$item}\n" if ($DEBUG);
-                delete $rdbms_functions_list_{4}{$item};
-            }
-        }
-    }
     
     if ($MINUTES_PER_WORKDAY) {
         $workday_minutes = $MINUTES_PER_WORKDAY;
@@ -740,6 +729,29 @@ sub options_handling {
         $rdbms_functions_list_{3} = \%oracle_functions_list_3;
         $rdbms_functions_list_{4} = \%oracle_functions_list_4;
     }
+    
+    # Easier migration if orafce is used
+    # we will remove from all lists elements found in the orafce hash
+    if ($ORAFCE) {
+        foreach my $item ( keys %list_orafce_functions ) {
+            if ( exists $rdbms_functions_list_{1}{$item} ) {
+		# print "deleted $rdbms_functions_list_{1}{$item}\n" if ($DEBUG);
+                delete $rdbms_functions_list_{1}{$item};
+            }
+            if ( exists $rdbms_functions_list_{2}{$item} ) {
+		# print "deleted $rdbms_functions_list_{2}{$item}\n" if ($DEBUG);
+                delete $rdbms_functions_list_{2}{$item};
+            }
+            if ( exists $rdbms_functions_list_{3}{$item} ) {
+	    	# print "deleted $rdbms_functions_list_{3}{$item}\n" if ($DEBUG);
+                delete $rdbms_functions_list_{3}{$item};
+            }
+            if ( exists $rdbms_functions_list_{4}{$item} ) {
+	        # print "deleted $rdbms_functions_list_{4}{$item}\n" if ($DEBUG);
+                delete $rdbms_functions_list_{4}{$item};
+            }
+        }
+    }
 
     # we open a file handle but it gets closed very far in the code
     # this should be improved
@@ -761,7 +773,8 @@ Usage: code2pg [--option value]
 
   -c, --config-file file   : a global code2pg configuration file
   -C, --csv-output file    : Oracle keywords will be redirected to this csv file
-  -d, --directory dir      : the source code directory to analyze
+  -d, --directory dir      : the source code directory to analyze.
+                             Can be used multiple times (-d dir1 -d dir2)
   -D, --directorytype type : the type of directory to analyze (svn|file)
   -e, --extension ext      : extensions of files to analyze. 
   -f, --format form        : report will be generated in the specified format
@@ -772,7 +785,7 @@ Usage: code2pg [--option value]
   --level1-minutes m       : minutes for a level1 instruction (1 by default)
   --level2-minutes m       : minutes for a level2 instruction (4 by default)
   --level3-minutes m       : minutes for a level3 instruction (8 by default)
-  --level4-minutes m       : minutes for a level4 instruction (16 by default)
+  --level4-minutes m       : minutes for a level4 instruction (20 by default)
   --minutes-per-workday m  : number of minutes per workday (360 by default)
   -o, --output-file file   : this will be the generated report filename
                              For html, will be estimation.html by default
@@ -943,6 +956,8 @@ sub terminal_output {
     my $analyzed_ext_align = sprintf( "Number of files with extension .%-8s %d", $ext_to_analyze, $nb_fic );
     my $orafce_usage = $ORAFCE ? "Yes" : "No";
 
+    my $dir_to_analyze = join("\n                                         ", @dir_to_analyze);
+
     my $term_output = qq{
 .----------------------------------------------------------------------------------------------------------------.
 |                                            code2pg                                                             |
@@ -1005,6 +1020,8 @@ sub html_output {
     my $ds_diff_by_level = "";              # and the available graphs
     my $ds_nb_of_inst    = "";
     my $ds_time_by_inst  = "";
+
+    my $dir_to_analyze = join(', ', @dir_to_analyze);
 
     ###########################################################################
     # Chart: Time by instructions
@@ -1424,13 +1441,13 @@ sub get_file_content {
         $fc = read_file($f);
     }
     # svn access
-    elsif ( $directory_type eq "svn" ) {
+    else { 
         my $svncommand = "";
         if ( $USERNAME ) {
-            $svncommand = "--username $user_name --password $user_password cat '$dir_to_analyze$f'";
+            $svncommand = "--username $user_name --password $user_password cat '$f'";
         }
         else {
-            $svncommand = "cat '$dir_to_analyze$f'";
+            $svncommand = "cat '$f'";
         }
         chomp($svncommand);
         print STDERR "      svn command: $svncommand\n" if ($DEBUG);
@@ -1445,23 +1462,35 @@ sub get_file_content {
 # Get the list of files
 sub get_file_list {
 
-    my @f = shift; # current file we're working on
-
+    my @f;    # will output the list of files with full path
+    my @cur;  # the list of files in our working directory
     print STDERR "Now parsing $directory_type type files\n" if ($DEBUG);
+    # print STDERR "List of directory =\n" . join(",", @dir_to_analyze) if ($DEBUG);
+    print STDERR "Extensions = $extensions_to_analyze" if ($DEBUG);
 
-    if ( $directory_type eq "file" ) {
-        @f = File::Find::Rule->file()->name( "*." . $extensions_to_analyze )
-          ->in($dir_to_analyze);
-    }
-    elsif ( $directory_type eq "svn" ) {
-        my $svncommand = "";
-        if ( $USERNAME ) {
-            $svncommand = "--username $user_name --password $user_password ";
+
+    for my $cur_dir (@dir_to_analyze) {
+	# print STDERR "cur_dir= $cur_dir \n" if ($DEBUG);
+
+        if ( $directory_type eq "file" ) {
+            @cur = File::Find::Rule->file()->name( '*.' . $extensions_to_analyze )->in($cur_dir);
+	    # print STDERR "@ cur = [" . join("\n", @cur) . "]\n";
+            push @f, @cur;
         }
-        $svncommand .= "ls -R $dir_to_analyze | grep -i \".$extensions_to_analyze\$\"";
-        @f = `svn $svncommand`;
-        for my $f (@f) {
-            chomp $f;
+	else { 
+            my $svncommand = "";
+            if ( $USERNAME ) {
+                $svncommand = "--username $user_name --password $user_password ";
+            }
+            $svncommand .= "ls -R $cur_dir | grep -i \".$extensions_to_analyze\$\"";
+            @cur = `svn $svncommand`;
+            for my $f (@cur) {
+		$f = $cur_dir . $f; # otherwise we do not have the full path
+                chomp $f;
+            }
+
+	    # print STDERR "@ cur = [" . join(",", @cur) . "]\n";
+	    push @f, @cur;
         }
     }
 
@@ -1494,8 +1523,12 @@ sub main {
     $matching_lvl_{3} = ();
     $matching_lvl_{4} = ();
 
-    print "Analyzing " if (!$quiet_exec);
+    print "############Analyzing " if (!$quiet_exec);
     @files = get_file_list();
+    print "\n############\n";
+    print "\@files = " . join ("\n", @files);
+    print "\n############\n";
+    # exit(2);
 
     foreach ( 1 .. 4 ) {
         $count_lvl_{$_} = 0;
@@ -1571,10 +1604,10 @@ sub main {
 
                     # use edit-file ?
                     if ($TAGFILE and ($directory_type eq "file") ) {
-                        print "$line_number\n";
-                        print "$LANGUAGE_COMMENTS_BEGIN{$chosen_language}\n";
-                        print "$element\n";
-                        print "$LANGUAGE_COMMENTS_END{$chosen_language} \n";
+			# print "$line_number\n";
+			# print "$LANGUAGE_COMMENTS_BEGIN{$chosen_language}\n";
+			# print "$element\n";
+			# print "$LANGUAGE_COMMENTS_END{$chosen_language} \n";
 
                         my $sed_command = '\''
                           . $line_number
@@ -1583,7 +1616,8 @@ sub main {
                           . ' CODE2PG_'
                           . $element . " "
                           . $LANGUAGE_COMMENTS_END{$chosen_language} . "/'";
-                        my $sed_res = `sed -i $sed_command $file` ;
+			# print "SED COMMAND = `sed -i $sed_command $file`\n" if ($DEBUG);
+                        my $sed_res = `sed -i $sed_command "$file"` ;
                         
                         $modified_file = 1;
                     }
@@ -1593,15 +1627,15 @@ sub main {
 
         # Sed is adding ^M on the files I tried. We remove them.
         if ( $modified_file == 1 ) {
-            my $sed_res = `sed -i 's///g' $file`;
+            my $sed_res = `sed -i 's///g' "$file"`;
         }
     }
     print "\rDone !                                                     \n" if (!$quiet_exec);
 
-    if ( $directory_type eq "file" ) {
-        $nb_analyzed_lines = `( find $dir_to_analyze -name "*.$extensions_to_analyze" -print0 | xargs -0 cat ) | wc -l`;
-        chomp($nb_analyzed_lines);
-    }
+    # if ( $directory_type eq "file" ) {
+    #     $nb_analyzed_lines = `( find $dir_to_analyze -name "*.$extensions_to_analyze" -print0 | xargs -0 cat ) | wc -l`;
+    #     chomp($nb_analyzed_lines);
+    # }
 
     $nb_files         = scalar @files;
     $new_nb_fct_total = $count_lvl_{1} + $count_lvl_{2} + $count_lvl_{3} + $count_lvl_{4};
@@ -1686,8 +1720,7 @@ Usage: code2pg
 [--minutes-per-workday integer]
 [--output-file] string
 [--output-directory string]
-  --rdbms rdbms            : from which RDBMS the migration will take place.
-                             Only Oracle is possible now.  (oracle by default)
+[--rdbms rdbms]
 [--orafce]
 [--password string]
 [--quiet]
@@ -1729,7 +1762,9 @@ monitor the progress of the migration while working on the translation.
 =item B<-d>, B<--directory> string
 
 Specify which directory should be recursively analyzed. Defaults to current
-directory.
+directory. 
+
+Can be used multiple times, for eg: ./code2pg -d dir1 -d dir2 ...
 
 =item B<-D>, B<--directorytype> string
 
