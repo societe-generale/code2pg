@@ -61,9 +61,9 @@ Besides the complete [generated documentation](https://github.com/societe-genera
 ```
 ./code2pg -e java -l java
 ```
-- analyze plsql files in another directory with extension .properties and generate a named html report. When SQL files must be analyzed directly (such as pl/sql or .properties files), please configure the language as plsql. For other languages, Oracle instructions will be searched between string delimiters.
+- analyze plsql files in two directories with extension .properties and generate a named html report. When SQL files must be analyzed directly (such as pl/sql or .properties files), please configure the language as plsql. For other languages, Oracle instructions will be searched between string delimiters.
 ```
-./code2pg -e properties -l plsql -d /tmp/project -o project_estimate.html
+./code2pg -e properties -l plsql -d /tmp/project1 -d /tmp/project2 -o project_estimate.html
 ```
 - analyze java files in a SVN repository and generate a text report:
 ```
