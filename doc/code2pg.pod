@@ -20,8 +20,7 @@ Usage: code2pg
 [--minutes-per-workday integer]
 [--output-file] string
 [--output-directory string]
-  --rdbms rdbms            : from which RDBMS the migration will take place.
-                             Only Oracle is possible now.  (oracle by default)
+[--rdbms rdbms]
 [--orafce]
 [--password string]
 [--quiet]
@@ -63,7 +62,9 @@ monitor the progress of the migration while working on the translation.
 =item B<-d>, B<--directory> string
 
 Specify which directory should be recursively analyzed. Defaults to current
-directory.
+directory. 
+
+Can be used multiple times, for eg: ./code2pg -d dir1 -d dir2 ...
 
 =item B<-D>, B<--directorytype> string
 
@@ -184,10 +185,6 @@ Strings in text could be used with " or '.
 =item B<Bug: Reports >
 
 Reports number of analyzed LOC is wrong (=0) for svn access.
-
-=item B<Limitation: Tag>
-
-Tagfiles cannot be used with a SVN repo yet.
 
 =item B<Limitation: extensions>
 
