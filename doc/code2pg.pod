@@ -78,6 +78,8 @@ Which file extensions will be analyzed in the specified directory. No preceding
 dot should be used. This should be set together with I<language> when no 
 configuration file is provided.
 
+Can be used multiple times, for eg: ./code2pg -e ext1 -e ext2 ...
+
 =item B<-f> , B<--format> string
 
 The report will be generated according to the specified format. It could be one
@@ -185,6 +187,10 @@ Strings in text could be used with " or '.
 =item B<Bug: Reports >
 
 Reports number of analyzed LOC is wrong (=0) for svn access.
+
+=item B<Limitation: Tag>
+
+Tagfiles cannot be used with a SVN repo yet.
 
 =item B<Limitation: extensions>
 
