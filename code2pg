@@ -2,7 +2,7 @@
 
 ################################################################################
 #
-# code2pg v0.10.2 - code migration estimation from Oracle to PostgreSQL
+# code2pg v0.10.3 - code migration estimation from Oracle to PostgreSQL
 #
 # Author: Anthony Nowocien anthony.nowocien@socgen.com
 # Copyright 2018 Société Générale
@@ -80,7 +80,7 @@ my %REGEX_AFTER = (
 ################################################################################
 # Internal variables and constants
 
-our $VERSION                = "0.10.2"; # this script version number
+our $VERSION                = "0.10.3"; # this script version number
 my  $CONFIG_FILE            = "";       # use of a config file
 my  $DEBUG                  = "";       # enable some debugging output
 my  $DIRECTORY              = "";       # the directory to analyze
@@ -117,7 +117,7 @@ my  $csv_file_output        = "";       # the csv file to log instructions
 my  @dir_to_analyze         = (".");    # default directories to analyze
 my  $directory_output       = ".";
 my  $directory_type         = "file";   # we analyze local files by default
-my  $extensions_to_analyze  = "*";      # which extensions to analyze
+my  @extensions_to_analyze  = ("*");    # which extensions to analyze
 my  $file_config            = "";       # name of the configuration file
 my  $file_output            = "estimation.html"; # our report file name
 my  $file_output_handle;
@@ -314,7 +314,7 @@ my %oracle_functions_list_4 = (
     'LAST_DAY'                     => '\bLAST_DAY\s*\(',
     'LENGTH2'                      => '\bLENGTH2\s*\(',
     'LENGTH4'                      => '\bLENGTH4\s*\(',
-    'LEVEL'                        => '(,|\s+)\bLEVEL\s*(,|FROM)', # Pseudo column
+    'LEVEL'                        => '(,|\s+)\bLEVEL\s*(,|FROM)', # Pseudo col
     'MAKE_REF'                     => '\bMAKE_REF\b',
     'MEDIAN'                       => '\bMEDIAN\s*\(',
     'MERGE'                        => '\bMERGE\s+',  # MERGE [hint] INTO ...
@@ -538,7 +538,7 @@ GetOptions(
     'C|csv-output=s'        => \$OUTPUT_CSV,
     'd|directory=s@'        => \$DIRECTORY,
     'D|directorytype=s'     => \$DIRECTORYTYPE,
-    'e|extension=s'         => \$EXTENSION,
+    'e|extension=s@'        => \$EXTENSION,
     'f|format=s'            => \$OUTPUT_FORMAT,
     'h|help'                => \$HELP,
     'l|language=s'          => \$LANGUAGE,
@@ -581,6 +581,7 @@ sub options_handling {
             }
             print STDERR "End config\n\n";
         }
+
         my $dir_to_analyze;
         $dir_to_analyze = $config_file{"directory"} if $config_file{"directory"};
 	# we can have multiple line of directory in the conf file
@@ -607,6 +608,7 @@ sub options_handling {
         $workday_minutes = $config_file{"minutes-per-workday"} if $config_file{"minutes-per-workday"};
         $user_name = $config_file{"username"} if $config_file{"username"};
         $user_password = $config_file{"password"} if $config_file{"password"};
+
         if ($config_file{"language"}) {
 	    $chosen_language = $config_file{"language"};
         } 
@@ -614,8 +616,19 @@ sub options_handling {
             print "Language parameter needs to be set in the configuration file\n";
 	    exit(2);
 	}
+
+	my $extensions_to_analyze;
         if ($config_file{"extension"}) {
 	    $extensions_to_analyze = $config_file{"extension"};
+
+	    # we can have multiple line of extensions in the conf file
+	    # we will make it an array
+	    if (ref($extensions_to_analyze) eq "ARRAY") {
+	        @extensions_to_analyze = @{$extensions_to_analyze};
+            }    
+	    else {
+	        @extensions_to_analyze = ($extensions_to_analyze);
+            }
         } 
 	else {
             print "Extension parameter needs to be set in the configuration file\n";
@@ -633,7 +646,7 @@ sub options_handling {
     
     if ($DIRECTORY) {
     	@dir_to_analyze = @$DIRECTORY;
-    };
+    }
 
     for my $el (@dir_to_analyze) {
         if ( substr( $el, -1 ) ne "\/" ) {
@@ -642,7 +655,7 @@ sub options_handling {
     } 
 
     if ($EXTENSION) {
-        $extensions_to_analyze = $EXTENSION;
+        @extensions_to_analyze = @$EXTENSION;
     }
 
     if ( ( $OUTPUT_FORMAT ne "txt" ) and ( $OUTPUT_FORMAT ne "html" ) and 
@@ -701,7 +714,7 @@ sub options_handling {
         exit(1);
     }
 
-    # if ( ! $CONFIG_FILE && ( $extensions_to_analyze xor $chosen_language)) {
+    # if ( ! $CONFIG_FILE && ( @extensions_to_analyze xor $chosen_language)) {
     if ( ! $CONFIG_FILE && ( $EXTENSION xor $LANGUAGE)) {
         print STDERR "Without a config file, both extensions and language need to be provided\n";
         exit(2);
@@ -772,11 +785,14 @@ Usage: code2pg [--option value]
   A source code analyzer that estimates an Oracle to PostgreSQL migration.
 
   -c, --config-file file   : a global code2pg configuration file
+                             if command line parameters are given, they take
+			     precedence over those in this file
   -C, --csv-output file    : Oracle keywords will be redirected to this csv file
   -d, --directory dir      : the source code directory to analyze.
                              Can be used multiple times (-d dir1 -d dir2)
   -D, --directorytype type : the type of directory to analyze (svn|file)
   -e, --extension ext      : extensions of files to analyze. 
+                             Can be used multiple times (-e ext1 -e ext2)
   -f, --format form        : report will be generated in the specified format
                              form = [txt|html|minimal]. Will be html by default
   -h, --help               : print this help
@@ -1420,9 +1436,9 @@ sub print_output_file {
     $file_content =~ s/\h+/ /g;    # We clean our csv output at first
     $file_content =~ s/\r//g;
 
-    print STDERR "\nWriting to csv output...\n" if ($DEBUG);
+    print STDERR "\nWriting to csv output... " if ($DEBUG);
     print {$fh_n} "difficulty;file;line number;instruction;extract;\n$file_content";
-    print STDERR "\nWriting complete.\n" if ($DEBUG);
+    print STDERR "Complete!\n" if ($DEBUG);
 
     close $fh_n;
     return 1;
@@ -1465,15 +1481,20 @@ sub get_file_list {
     my @f;    # will output the list of files with full path
     my @cur;  # the list of files in our working directory
     print STDERR "Now parsing $directory_type type files\n" if ($DEBUG);
-    # print STDERR "List of directory =\n" . join(",", @dir_to_analyze) if ($DEBUG);
-    print STDERR "Extensions = $extensions_to_analyze" if ($DEBUG);
+    print STDERR "Extensions =\n" . join(",", @extensions_to_analyze) if ($DEBUG);
+    # print STDERR "Extensions = $extensions_to_analyze" if ($DEBUG);
 
 
     for my $cur_dir (@dir_to_analyze) {
 	# print STDERR "cur_dir= $cur_dir \n" if ($DEBUG);
 
         if ( $directory_type eq "file" ) {
-            @cur = File::Find::Rule->file()->name( '*.' . $extensions_to_analyze )->in($cur_dir);
+	    my @ext = @extensions_to_analyze;
+	    for my $e (@ext) {
+                $e = '*.' . $e;
+	    }
+	    @cur = File::Find::Rule->file()->name(@ext)->in($cur_dir);
+	    # print STDERR "\nEXT TO ANALYZE = " . join(',', @ext) if ($DEBUG);
 	    # print STDERR "@ cur = [" . join("\n", @cur) . "]\n";
             push @f, @cur;
         }
@@ -1482,7 +1503,9 @@ sub get_file_list {
             if ( $USERNAME ) {
                 $svncommand = "--username $user_name --password $user_password ";
             }
-            $svncommand .= "ls -R $cur_dir | grep -i \".$extensions_to_analyze\$\"";
+	    # $svncommand .= "ls -R $cur_dir | grep -i \"" . " -e " . join(" -e ", @names)                   .$extensions_to_analyze\$\"";
+            $svncommand .= "ls -R $cur_dir | grep -i -e \"." . join('$" -e ".', @extensions_to_analyze) . '$"';
+	    print "SVN COMMAND = $svncommand \n" if ($DEBUG);
             @cur = `svn $svncommand`;
             for my $f (@cur) {
 		$f = $cur_dir . $f; # otherwise we do not have the full path
@@ -1523,31 +1546,16 @@ sub main {
     $matching_lvl_{3} = ();
     $matching_lvl_{4} = ();
 
-    print "############Analyzing " if (!$quiet_exec);
+    print "Analyzing " if (!$quiet_exec);
     @files = get_file_list();
-    print "\n############\n";
-    print "\@files = " . join ("\n", @files);
-    print "\n############\n";
+    # print "\@files = " . join ("\n", @files);
+    # print "\n############\n";
     # exit(2);
 
     foreach ( 1 .. 4 ) {
         $count_lvl_{$_} = 0;
     }
 
-    # # if we're looking into sql code, keywords are matched directly
-    # # used in the generated csv file
-    # if ( $chosen_language eq 'plsql' ) {
-    #     $regex_before = '^.*'; # to match the whole line for csv. use with /gipm
-    #     $regex_before = '';
-    #     $regex_after  = '.*$';
-    #     $regex_after  = '';
-    # }
-
-    # # in most languages, we look after keywords in character strings
-    # else {
-    #     $regex_before = '".*?';
-    #     $regex_after  = '.*?\"';
-    # }
 
     if (exists $REGEX_BEFORE{$chosen_language}) {
         $regex_bef = $REGEX_BEFORE{$chosen_language};
@@ -1646,7 +1654,7 @@ sub main {
       $count_lvl_{3} * $MIGRATION_COST{"LVL3"} +
       $count_lvl_{4} * $MIGRATION_COST{"LVL4"};
     $estimated_load_mandays = $estimated_load / $workday_minutes;
-
+    my $extensions_to_analyze = join(',', @extensions_to_analyze);
     $analyzed_ext_align = sprintf( "Number of files with extension .%-10s %d", $extensions_to_analyze, $nb_files );
 
     # we write to our csv output file
@@ -1777,6 +1785,8 @@ Defaults to file.
 Which file extensions will be analyzed in the specified directory. No preceding
 dot should be used. This should be set together with I<language> when no 
 configuration file is provided.
+
+Can be used multiple times, for eg: ./code2pg -e ext1 -e ext2 ...
 
 =item B<-f> , B<--format> string
 
