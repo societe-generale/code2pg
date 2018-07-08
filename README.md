@@ -61,6 +61,11 @@ Besides the complete [generated documentation](https://github.com/societe-genera
 ```
 ./code2pg -e java -l java
 ```
+- analyze java, jsp and .properties files in the current directory. This will so far need two reports as Oracle instructins will need to be analyzed in "" delimited strings, but directly in .properties files:
+```
+./code2pg -e java -e jsp -l java -f myproject_java.html
+./code2pg -e properties -l plsql -f myproject_properties.html
+```
 - analyze plsql files in two directories with extension .properties and generate a named html report. When SQL files must be analyzed directly (such as pl/sql or .properties files), please configure the language as plsql. For other languages, Oracle instructions will be searched between string delimiters.
 ```
 ./code2pg -e properties -l plsql -d /tmp/project1 -d /tmp/project2 -o project_estimate.html
