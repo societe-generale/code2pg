@@ -2,7 +2,7 @@
 
 ################################################################################
 #
-# code2pg v0.10.3 - code migration estimation from Oracle to PostgreSQL
+# code2pg v0.11.0 - code migration estimation from Oracle to PostgreSQL
 #
 # Author: Anthony Nowocien anthony.nowocien@socgen.com
 # Copyright 2018 Société Générale
@@ -80,7 +80,7 @@ my %REGEX_AFTER = (
 ################################################################################
 # Internal variables and constants
 
-our $VERSION                = "0.10.3"; # this script version number
+our $VERSION                = "0.11.0"; # this script version number
 my  $CONFIG_FILE            = "";       # use of a config file
 my  $DEBUG                  = "";       # enable some debugging output
 my  $DIRECTORY              = "";       # the directory to analyze
@@ -130,272 +130,1282 @@ my  $user_password          = "";       # password for svn access
 my  $workday_minutes        = 360;      # by default, 6h of work per day 
 my  %rdbms_functions_list_  = ();       # functions ordered by diff. level
 
-# each keyword will be matched with a corresponding regex - level 1
-my %oracle_functions_list_1 = (
-    'ABS'                 => '\bABS\s*\(',
-    'ACOS'                => '\bACOS\s*\(',
-    'ASCII'               => '\bASCII\b',
-    'ASIN'                => '\bASIN\s*\(',
-    'ATAN'                => '\bATAN\s*\(',
-    'ATAN2'               => '\bATAN2\s*\(',
-    'AVG'                 => '\bAVG\b',
-    'BETWEEN'             => '\bBETWEEN\b',
-    'CEIL'                => '\bCEIL\s*\(',
-    'COALESCE'            => '\bCOALESCE\b',
-    'COS'                 => '\bCOS\s*\(',
-    'COUNT'               => '\bCOUNT\s*\(',
-    'CURRENT_DATE'        => '\bCURRENT_DATE\b',
-    'CURRENT_TIMESTAMP'   => '\bCURRENT_TIMESTAMP\b',
-    'DELETE_WITHOUT_FROM' => '\bDELETE(?!\s+FROM\b)',
-    'DUAL'                => '\bFROM\s+DUAL\b',
-    'EXP'                 => '\bEXP\s*\(',
-    'FLOOR'               => '\bFLOOR\s*\(',
-    'INITCAP'             => '\bINITCAP\b',
-    'LN'                  => '\bLN\s*\(',
-    'LOG'                 => '\bLOG\s*\(',
-    'LOWER'               => '\bLOWER\s*\(',
-    'MAX'                 => '\bMAX\s*\(',
-    'MIN'                 => '\bMIN\s*\(',
-    'MINUS'               => '\bMINUS\b',
-    'MOD'                 => '\bMOD\s*\(',
-    'POWER'               => '\bPOWER\s*\(',
-    'ROUND'               => '\bROUND\s*\(',
-    'SIGN'                => '\bSIGN\s*\(',
-    'SIN'                 => '\bSIN\s*\(',
-    'SQRT'                => '\bSQRT\s*\(',
-    'SYSTIMESTAMP'        => '\bSYSTIMESTAMP',
-    'TAN'                 => '\bTAN\s*\(',
-    'UPPER'               => '\bUPPER\s*\(',
-    'USER'                => '\bUSER\b',
-    'XMLCOMMENT'          => '\bXMLCOMMENT\b',
-);
+my %oracle_functions_list_1;
+my %oracle_functions_list_2;
+my %oracle_functions_list_3;
+my %oracle_functions_list_4;
 
-# each keywork will be matched with a corresponding regex - level 2
-my %oracle_functions_list_2 = (
-    'BIN_TO_NUM'      => '\bBIN_TO_NUM\s*\(',
-    'COMMIT'          => '\bCOMMIT\b',
-    'CONCAT'          => '\bCONCAT\s*\(',
-    'CORR'            => '\bCORR\s*\(',
-    'COSH'            => '\bCOSH\s*\(',
-    'COVAR_POP'       => '\bCOVAR_POP\s*\(',
-    'COVAR_SAMP'      => '\bCOVAR_SAMP\s*\(',
-    'CURRVAL'         => '\bCURRVAL\b',
-    'LENGTH'          => '\bLENGTH\s*\(',
-    'LENGTHB'         => '\bLENGTHB\s*\(',
-    'LENGTHC'         => '\bLENGTHC\s*\(',
-    'LNNVL'           => '\bLNNVL\s*\(',
-    'LOCALTIMESTAMP'  => '\bLOCALTIMESTAMP\b',
-    'LPAD'            => '\bLPAD\s*\(',
-    'LTRIM'           => '\bLTRIM\s*\(',
-    'NEXTVAL'         => '\bNEXTVAL\b',
-    'NULLIF'          => '\bNULLIF\s*\(',
-    'NVL'             => '\bNVL\s*\(',
-    'REMAINDER'       => '\bREMAINDER\s*\(',
-    'REPLACE'         => '\bREPLACE\s*\(',
-    'ROLLBACK'        => '\bROLLBACK\b',
-    'RPAD'            => '\bRPAD\s*\(',
-    'RTRIM'           => '\bRTRIM\s*\(',
-    'STDDEV'          => '\bSTDDEV\s*\(',
-    'STDDEV_POP'      => '\bSTDDEV_POP\s*\(',
-    'STDDEV_SAMP'     => '\bSTDDEV_SAMP\s*\(',
-    'SUBSTR'          => '\bSUBSTR[BC24]?\s*\(',
-    'SUM'             => '\bSUM\s*\(',
-    'SYSDATE'         => '\bSYSDATE\b',
-    'TO_BINARY_FLOAT' => '\bTO_BINARY_FLOAT\s*\(',
-    'TO_DATE'         => '\bTO_DATE\s*\(',
-    'TO_NUMBER'       => '\bTO_NUMBER\s*\(',
-    'TO_TIMESTAMP'    => '\bTO_TIMESTAMP\s*\(',
-    'TO_TIMESTAMP_TZ' => '\bTO_TIMESTAMP_TZ\s*\(',
-    'TRANSLATE'       => '\bTRANSLATE\s*\(',
-    'TRIM'            => '\bTRIM\s*\(',
-    'TRUNC'           => '\bTRUNC\s*\(',
-    'VAR_POP'         => '\bVAR_POP\s*\(',
-    'VAR_SAMP'        => '\bVAR_SAMP\s*\(',
-    'WIDTH_BUCKET'    => '\bWIDTH_BUCKET\s*\(',
-    'XMLAGG'          => '\bXMLAGG\s*\(',
-    'XMLTYPE'         => '\bXMLTYPE\b',
-);
+# ORA_FUNC_1 - each keyword will be matched with a corresponding regex - level 1
+$oracle_functions_list_1{'ABS'}{'regex'}                 = '\bABS\s*\(';
+$oracle_functions_list_1{'ACOS'}{'regex'}                = '\bACOS\s*\(';
+$oracle_functions_list_1{'ASCII'}{'regex'}               = '\bASCII\b';
+$oracle_functions_list_1{'ASIN'}{'regex'}                = '\bASIN\s*\(';
+$oracle_functions_list_1{'ATAN'}{'regex'}                = '\bATAN\s*\(';
+$oracle_functions_list_1{'ATAN2'}{'regex'}               = '\bATAN2\s*\(';
+$oracle_functions_list_1{'AVG'}{'regex'}                 = '\bAVG\b';
+$oracle_functions_list_1{'BETWEEN'}{'regex'}             = '\bBETWEEN\b';
+$oracle_functions_list_1{'CEIL'}{'regex'}                = '\bCEIL\s*\(';
+$oracle_functions_list_1{'COALESCE'}{'regex'}            = '\bCOALESCE\b';
+$oracle_functions_list_1{'COS'}{'regex'}                 = '\bCOS\s*\(';
+$oracle_functions_list_1{'COUNT'}{'regex'}               = '\bCOUNT\s*\(';
+$oracle_functions_list_1{'CURRENT_DATE'}{'regex'}        = '\bCURRENT_DATE\b';
+$oracle_functions_list_1{'CURRENT_TIMESTAMP'}{'regex'}   = '\bCURRENT_TIMESTAMP\b';
+$oracle_functions_list_1{'DELETE_WITHOUT_FROM'}{'regex'} = '\bDELETE(?!\s+FROM\b)';
+$oracle_functions_list_1{'DUAL'}{'regex'}                = '\bFROM\s+DUAL\b';
+$oracle_functions_list_1{'EXP'}{'regex'}                 = '\bEXP\s*\(';
+$oracle_functions_list_1{'FLOOR'}{'regex'}               = '\bFLOOR\s*\(';
+$oracle_functions_list_1{'INITCAP'}{'regex'}             = '\bINITCAP\b';
+$oracle_functions_list_1{'LN'}{'regex'}                  = '\bLN\s*\(';
+$oracle_functions_list_1{'LOG'}{'regex'}                 = '\bLOG\s*\(';
+$oracle_functions_list_1{'LOWER'}{'regex'}               = '\bLOWER\s*\(';
+$oracle_functions_list_1{'MAX'}{'regex'}                 = '\bMAX\s*\(';
+$oracle_functions_list_1{'MIN'}{'regex'}                 = '\bMIN\s*\(';
+$oracle_functions_list_1{'MINUS'}{'regex'}               = '\bMINUS\b';
+$oracle_functions_list_1{'MOD'}{'regex'}                 = '\bMOD\s*\(';
+$oracle_functions_list_1{'POWER'}{'regex'}               = '\bPOWER\s*\(';
+$oracle_functions_list_1{'ROUND'}{'regex'}               = '\bROUND\s*\(';
+$oracle_functions_list_1{'SIGN'}{'regex'}                = '\bSIGN\s*\(';
+$oracle_functions_list_1{'SIN'}{'regex'}                 = '\bSIN\s*\(';
+$oracle_functions_list_1{'SQRT'}{'regex'}                = '\bSQRT\s*\(';
+$oracle_functions_list_1{'SYSTIMESTAMP'}{'regex'}        = '\bSYSTIMESTAMP';
+$oracle_functions_list_1{'TAN'}{'regex'}                 = '\bTAN\s*\(';
+$oracle_functions_list_1{'UPPER'}{'regex'}               = '\bUPPER\s*\(';
+$oracle_functions_list_1{'USER'}{'regex'}                = '\bUSER\b';
+$oracle_functions_list_1{'XMLCOMMENT'}{'regex'}          = '\bXMLCOMMENT\b';
 
-# each keyword will be matched with a corresponding regex - level 3
-my %oracle_functions_list_3 = (
-    'ORACLE_OUTER_JOIN' => '\(\+\)',
-    'HINTS'             => '\/\*\+',
-    'ADD_MONTHS'        => '\bADD_MONTHS\s*\(',
-    'BITAND'            => '\bBITAND\s*\(',
-    'BULK COLLECT'      => '\bBULK\s*COLLECT\b',
-    'CAST'              => '\bCAST\s*\(',
-    'CHR'               => '\bCHR\s*\(',
-    'CURSOR'            => '\bCURSOR\s+', # correct it, too many false positives
-    'DBTIMEZONE'        => '\bDBTIMEZONE\b',
-    'DECODE'            => '\bDECODE\s*\(',
-    'DENSE_RANK'        => '\bDENSE_RANK\s*\(',
-    'EXTRACT'           => '\bEXTRACT\s*\(',
-    'FIRST'             => '\b(DENSE_RANK|NULLS)\s*FIRST\b',
-    'FORALL'            => '\bFORALL\b',
-    'GREATEST'          => '\bGREATEST\s*\(',
-    'IS NAN'            => '\bIS\s+NAN\b',
-    'IS NOT NAN'        => '\bIS\s+NOT\s+NAN\b',
-    'LAST'              => '\b(DENSE_RANK|NULLS)\s*LAST\b',
-    'LEAST'             => '\bLEAST\s*\(',
-    'LISTAGG'           => '\bLISTAGG\s*\(',
-    'NANVL'             => '\bNANVL\s*\(',
-    'NVL2'              => '\bNVL2\s*\(',
-    'PERCENT_RANK'      => '\bPERCENT_RANK\s*\(',
-    'RANK'              => '\bRANK\s*\(',
-    'REGR_AVGX'         => '\bREGR_AVGX\s*\(',
-    'REGR_AVGY'         => '\bREGR_AVGY\s*\(',
-    'REGR_COUNT'        => '\bREGR_COUNT\s*\(',
-    'REGR_INTERCEPT'    => '\bREGR_INTERCEPT\s*\(',
-    'REGR_R2'           => '\bREGR_R2\s*\(',
-    'REGR_SLOPE'        => '\bREGR_SLOPE\s*\(',
-    'REGR_SXX'          => '\bREGR_SXX\s*\(',
-    'REGR_SXY'          => '\bREGR_SXY\s*\(',
-    'REGR_SYY'          => '\bREGR_SYY\s*\(',
-    'ROUND'             => '\bROUND\s*\(',
-    'ROWID'             => '\bROWID\b',
-    'ROWNUM'            => '\bROWNUM\b',
-    'SEQUENCE'          => '\bSEQUENCE\b',
-    'SINH'              => '\bSINH\s*\(',
-    'SOUNDEX'           => '\bSOUNDEX\s*\(',
-    'TANH'              => '\bTANH\s*\(',
-    'TO_CHAR'           => '\bTO_CHAR\s*\(',
-    'TZ_OFFSET'         => '\bTZ_OFFSET\s*\(',
-    'VARIANCE'          => '\bVARIANCE\s*\(',
-    'VIEW'              => '\bVIEW\b',
-    'VSIZE'             => '\bVSIZE\s*\(',
-    'XMLCONCAT'         => '\bXMLCONCAT\s*\(',
-    'XMLELEMENT'        => '\bXMLELEMENT\s*\(',
-    'XMLFOREST'         => '\bXMLFOREST\s*\(',
-    'XMLPARSE'          => '\bXMLPARSE\s*\(',
-    'XMLPI'             => '\bXMLPI\s*\(',
-    'XMLROOT'           => '\bXMLROOT\s*\(',
-    'XMLSERIALIZE'      => '\bXMLSERIALIZE\s*\(',
-);
+# ORA_FUNC_2 - each keywork will be matched with a corresponding regex - level 2
+$oracle_functions_list_2{'BIN_TO_NUM'}{'regex'}      = '\bBIN_TO_NUM\s*\(';
+$oracle_functions_list_2{'COMMIT'}{'regex'}          = '\bCOMMIT\b';
+$oracle_functions_list_2{'CONCAT'}{'regex'}          = '\bCONCAT\s*\(';
+$oracle_functions_list_2{'CORR'}{'regex'}            = '\bCORR\s*\(';
+$oracle_functions_list_2{'COSH'}{'regex'}            = '\bCOSH\s*\(';
+$oracle_functions_list_2{'COVAR_POP'}{'regex'}       = '\bCOVAR_POP\s*\(';
+$oracle_functions_list_2{'COVAR_SAMP'}{'regex'}      = '\bCOVAR_SAMP\s*\(';
+$oracle_functions_list_2{'CURRVAL'}{'regex'}         = '\bCURRVAL\b';
+$oracle_functions_list_2{'LENGTH'}{'regex'}          = '\bLENGTH\s*\(';
+$oracle_functions_list_2{'LENGTHB'}{'regex'}         = '\bLENGTHB\s*\(';
+$oracle_functions_list_2{'LENGTHC'}{'regex'}         = '\bLENGTHC\s*\(';
+$oracle_functions_list_2{'LNNVL'}{'regex'}           = '\bLNNVL\s*\(';
+$oracle_functions_list_2{'LOCALTIMESTAMP'}{'regex'}  = '\bLOCALTIMESTAMP\b';
+$oracle_functions_list_2{'LPAD'}{'regex'}            = '\bLPAD\s*\(';
+$oracle_functions_list_2{'LTRIM'}{'regex'}           = '\bLTRIM\s*\(';
+$oracle_functions_list_2{'NEXTVAL'}{'regex'}         = '\bNEXTVAL\b';
+$oracle_functions_list_2{'NULLIF'}{'regex'}          = '\bNULLIF\s*\(';
+$oracle_functions_list_2{'NVL'}{'regex'}             = '\bNVL\s*\(';
+$oracle_functions_list_2{'REMAINDER'}{'regex'}       = '\bREMAINDER\s*\(';
+$oracle_functions_list_2{'REPLACE'}{'regex'}         = '\bREPLACE\s*\(';
+$oracle_functions_list_2{'ROLLBACK'}{'regex'}        = '\bROLLBACK\b';
+$oracle_functions_list_2{'RPAD'}{'regex'}            = '\bRPAD\s*\(';
+$oracle_functions_list_2{'RTRIM'}{'regex'}           = '\bRTRIM\s*\(';
+$oracle_functions_list_2{'STDDEV'}{'regex'}          = '\bSTDDEV\s*\(';
+$oracle_functions_list_2{'STDDEV_POP'}{'regex'}      = '\bSTDDEV_POP\s*\(';
+$oracle_functions_list_2{'STDDEV_SAMP'}{'regex'}     = '\bSTDDEV_SAMP\s*\(';
+$oracle_functions_list_2{'SUBSTR'}{'regex'}          = '\bSUBSTR[BC24]?\s*\(';
+$oracle_functions_list_2{'SUM'}{'regex'}             = '\bSUM\s*\(';
+$oracle_functions_list_2{'SYSDATE'}{'regex'}         = '\bSYSDATE\b';
+$oracle_functions_list_2{'TO_BINARY_FLOAT'}{'regex'} = '\bTO_BINARY_FLOAT\s*\(';
+$oracle_functions_list_2{'TO_DATE'}{'regex'}         = '\bTO_DATE\s*\(';
+$oracle_functions_list_2{'TO_NUMBER'}{'regex'}       = '\bTO_NUMBER\s*\(';
+$oracle_functions_list_2{'TO_TIMESTAMP'}{'regex'}    = '\bTO_TIMESTAMP\s*\(';
+$oracle_functions_list_2{'TO_TIMESTAMP_TZ'}{'regex'} = '\bTO_TIMESTAMP_TZ\s*\(';
+$oracle_functions_list_2{'TRANSLATE'}{'regex'}       = '\bTRANSLATE\s*\(';
+$oracle_functions_list_2{'TRIM'}{'regex'}            = '\bTRIM\s*\(';
+$oracle_functions_list_2{'TRUNC'}{'regex'}           = '\bTRUNC\s*\(';
+$oracle_functions_list_2{'VAR_POP'}{'regex'}         = '\bVAR_POP\s*\(';
+$oracle_functions_list_2{'VAR_SAMP'}{'regex'}        = '\bVAR_SAMP\s*\(';
+$oracle_functions_list_2{'WIDTH_BUCKET'}{'regex'}    = '\bWIDTH_BUCKET\s*\(';
+$oracle_functions_list_2{'XMLAGG'}{'regex'}          = '\bXMLAGG\s*\(';
+$oracle_functions_list_2{'XMLTYPE'}{'regex'}         = '\bXMLTYPE\b';
 
-# each keyword will be matched with a corresponding regex - level 4
-my %oracle_functions_list_4 = (
-    'APPENDCHILDXML'               => '\bAPPENDCHILDXML\s*\(',
-    'ASCIISTR'                     => '\bASCIISTR\s*\(',
-    'BFILENAME'                    => '\bBFILENAME\s*\(',
-    'CARDINALITY'                  => '\bCARDINALITY\s*\(',
-    'CHARTOROWID'                  => '\bCHARTOROWID\s*\(',
-    'CLUSTER_ID'                   => '\bCLUSTER_ID\s*\(',
-    'CLUSTER_PROBABILITY'          => '\bCLUSTER_PROBABILITY\s*\(',
-    'CLUSTER_SET'                  => '\bCLUSTER_SET\s*\(',
-    'COLLECT'                      => '\bCOLLECT\s*\(',
-    'COMPOSE'                      => '\bCOMPOSE\s*\(',
-    'CONNECT BY'                   => '\bCONNECT\s+BY\b',
-    'CONVERT'                      => '\bCONVERT\s*\(',
-    'CORR_K'                       => '\bCORR_K\s*\(',
-    'CORR_S'                       => '\bCORR_S\s*\(',
-    'CUME_DIST'                    => '\bCUME_DIST\s*\(',
-    'CV'                           => '\bCV\s*\(',
-    'DECOMPOSE'                    => '\bDECOMPOSE\s*\(',
-    'DELETEXML'                    => '\bDELETEXML\s*\(',
-    'DEPTH'                        => '\bDEPTH\s*\(',
-    'DEREF'                        => '\bDEREF\s*\(',
-    'DUMP'                         => '\bDUMP\b', # use the parenthesis ?
-    'EMPTY_BLOB'                   => '\bEMPTY_BLOB\s*\(',
-    'EMPTY_CLOB'                   => '\bEMPTY_CLOB\s*\(',
-    'EXISTSNODE'                   => '\bEXISTSNODE\s*\(',
-    'EXTRACTVALUE'                 => '\bEXTRACTVALUE\s*\(',
-    'FEATURE_ID'                   => '\bFEATURE_ID\s*\(',
-    'FEATURE_SET'                  => '\bFEATURE_SET\s*\(',
-    'FEATURE_VALUE'                => '\bFEATURE_VALUE\s*\(',
-    'FROM_TZ'                      => '\bFROM_TZ\s*\(',
-    'GROUP_ID'                     => '\bGROUP_ID\s*\(',
-    'GROUPING'                     => '\bGROUPING\b', # use the parenthesis ?
-    'GROUPING_ID'                  => '\bGROUPING_ID\s*\(',
-    'HEXTORAW'                     => '\bHEXTORAW\s*\(',
-    'INSERTCHILDXML'               => '\bINSERTCHILDXML\s*\(',
-    'INSERTXMLBEFORE'              => '\bINSERTXMLBEFORE\s*\(',
-    'INSTR'                        => '\bINSTR[BC24]?\s*\(',
-    'ITERATION_NUMBER'             => '\bITERATION_NUMBER\b',
-    'LAST_DAY'                     => '\bLAST_DAY\s*\(',
-    'LENGTH2'                      => '\bLENGTH2\s*\(',
-    'LENGTH4'                      => '\bLENGTH4\s*\(',
-    'LEVEL'                        => '(,|\s+)\bLEVEL\s*(,|FROM)', # Pseudo col
-    'MAKE_REF'                     => '\bMAKE_REF\b',
-    'MEDIAN'                       => '\bMEDIAN\s*\(',
-    'MERGE'                        => '\bMERGE\s+',  # MERGE [hint] INTO ...
-    'MONTHS_BETWEEN'               => '\bMONTHS_BETWEEN\s*\(',
-    'NEW_TIME'                     => '\bNEW_TIME\s*\(',
-    'NEXT_DAY'                     => '\bNEXT_DAY\s*\(',
-    'NLS_CHARSET_DECL_LEN'         => '\bNLS_CHARSET_DECL_LEN\s*\(',
-    'NLS_CHARSET_ID'               => '\bNLS_CHARSET_ID\s*\(',
-    'NLS_CHARSET_NAME'             => '\bNLS_CHARSET_NAME\s*\(',
-    'NLS_INITCAP'                  => '\bNLS_INITCAP\s*\(',
-    'NLS_LOWER'                    => '\bNLS_LOWER\s*\(',
-    'NLS_UPPER'                    => '\bNLS_UPPER\s*\(',
-    'NLSSORT'                      => '\bNLSSORT\s*\(',
-    'NUMTODSINTERVAL'              => '\bNUMTODSINTERVAL\s*\(',
-    'NUMTOYMINTERVAL'              => '\bNUMTOYMINTERVAL\s*\(',
-    'ORA_HASH'                     => '\bORA_HASH\s*\(',
-    'PATH'                         => '\bPATH\s*\(',
-    'PERCENTILE_CONT'              => '\bPERCENTILE_CONT\s*\(',
-    'PERCENTILE_DISC'              => '\bPERCENTILE_DISC\s*\(',
-    'POWERMULTISET'                => '\bPOWERMULTISET\s*\(',
-    'POWERMULTISET_BY_CARDINALITY' => '\bPOWERMULTISET_BY_CARDINALITY\s*\(',
-    'PREDICTION'                   => '\bPREDICTION\s*\(',
-    'PREDICTION_COST'              => '\bPREDICTION_COST\s*\(',
-    'PREDICTION_DETAILS'           => '\bPREDICTION_DETAILS\s*\(',
-    'PREDICTION_PROBABILITY'       => '\bPREDICTION_PROBABILITY\s*\(',
-    'PREDICTION_SET'               => '\bPREDICTION_SET\s*\(',
-    'PRESENTNNV'                   => '\bPRESENTNNV\s*\(',
-    'PRESENTV'                     => '\bPRESENTV\s*\(',
-    'PREVIOUS'                     => '\bPREVIOUS\s*\(',
-    'RAWTOHEX'                     => '\bRAWTOHEX\s*\(',
-    'RAWTONHEX'                    => '\bRAWTONHEX\s*\(',
-    'REF'                          => '\bREF\s*\(',
-    'REFTOHEX'                     => '\bREFTOHEX\s*\(',
-    'REGEXP_INSTR'                 => '\bREGEXP_INSTR\s*\(',
-    'REGEXP_REPLACE'               => '\bREGEXP_REPLACE\s*\(',
-    'REGEXP_SUBSTR'                => '\bREGEXP_SUBSTR\s*\(',
-    'ROWIDTOCHAR'                  => '\bROWIDTOCHAR\s*\(',
-    'ROWIDTONCHAR'                 => '\bROWIDTONCHAR\s*\(',
-    'SCN_TO_TIMESTAMP'             => '\bSCN_TO_TIMESTAMP\s*\(',
-    'SESSIONTIMEZONE'              => '\bSESSIONTIMEZONE\b',
-    'SET'                          => '\bSET\s*\(',
-    'STATS_BINOMIAL_TEST'          => '\bSTATS_BINOMIAL_TEST\s*\(',
-    'STATS_CROSSTAB'               => '\bSTATS_CROSSTAB\s*\(',
-    'STATS_F_TEST'                 => '\bSTATS_F_TEST\s*\(',
-    'STATS_KS_TEST'                => '\bSTATS_KS_TEST\s*\(',
-    'STATS_MODE'                   => '\bSTATS_MODE\s*\(',
-    'STATS_MW_TEST'                => '\bSTATS_MW_TEST\s*\(',
-    'STATS_ONE_WAY_ANOVA'          => '\bSTATS_ONE_WAY_ANOVA\s*\(',
-    'STATS_T_TEST_'       => '\bSTATS_T_TEST',    # _[ONE|PAIRED|INDEP|INDEPU]
-    'STATS_WSR_TEST'      => '\bSTATS_WSR_TEST\s*\(',
-    'SYNONYM'             => '\bSYNONYM\b',
-    'SYS_CONNECT_BY_PATH' => '\bSYS_CONNECT_BY_PATH\s*\(',
-    'SYS_CONTEXT'         => '\bSYS_CONTEXT\s*\(',
-    'SYS_DBURIGEN'        => '\bSYS_DBURIGEN\s*\(',
-    'SYS_EXTRACT_UTC'     => '\bSYS_EXTRACT_UTC\s*\(',
-    'SYS_GUID'            => '\bSYS_GUID\s*\(',
-    'SYS_TYPEID'          => '\bSYS_TYPEID\s*\(',
-    'SYS_XMLAGG'          => '\bSYS_XMLAGG\s*\(',
-    'SYS_XMLGEN'          => '\bSYS_XMLGEN\s*\(',
-    'TIMESTAMP_TO_SCN'    => '\bTIMESTAMP_TO_SCN\s*\(',
-    'TO_BINARY_DOUBLE'    => '\bTO_BINARY_DOUBLE\s*\(',
-    'TO_CLOB'             => '\bTO_CLOB\s*\(',
-    'TO_DSINTERVAL'       => '\bTO_DSINTERVAL\s*\(',
-    'TO_LOB'              => '\bTO_LOB\s*\(',
-    'TO_MULTI_BYTE'       => '\bTO_MULTI_BYTE\s*\(',
-    'TO_NCHAR'            => '\bTO_NCHAR\s*\(',
-    'TO_NCLOB'            => '\bTO_NCLOB\s*\(',
-    'TO_SINGLE_BYTE'      => '\bTO_SINGLE_BYTE\s*\(',
-    'TO_YMINTERVAL'       => '\bTO_YMINTERVAL\s*\(',
-    'TREAT'               => '\bTREAT\s*\(',
-    'UID'                 => '\bUID\b',
-    'UNISTR'              => '\bUNISTR\s*\(',
-    'UPDATEXML'           => '\bUPDATEXML\s*\(',
-    'USERENV'             => '\bUSERENV\s*\(',
-    'XMLCDATA'            => '\bXMLCDATA\s*\(',
-    'XMLCOLATTVAL'        => '\bXMLCOLATTVAL\s*\(',
-    'XMLQUERY'            => '\bXMLQUERY\s*\(',
-    'XMLSEQUENCE'         => '\bXMLSEQUENCE\s*\(',
-    'XMLTABLE'            => '\bXMLTABLE\s*\(',
-    'XMLTRANSFORM'        => '\bXMLTRANSFORM\s*\(',
-);
+# ORA_FUNC_3 - each keyword will be matched with a corresponding regex - level 3
+$oracle_functions_list_3{'ORACLE_OUTER_JOIN'}{'regex'} = '\(\+\)';
+$oracle_functions_list_3{'HINTS'}{'regex'}             = '\/\*\+';
+$oracle_functions_list_3{'ADD_MONTHS'}{'regex'}        = '\bADD_MONTHS\s*\(';
+$oracle_functions_list_3{'BITAND'}{'regex'}            = '\bBITAND\s*\(';
+$oracle_functions_list_3{'BULK COLLECT'}{'regex'}      = '\bBULK\s*COLLECT\b';
+$oracle_functions_list_3{'CAST'}{'regex'}              = '\bCAST\s*\(';
+$oracle_functions_list_3{'CHR'}{'regex'}               = '\bCHR\s*\(';
+$oracle_functions_list_3{'CURSOR'}{'regex'}            = '\bCURSOR\s+', # correct it, too many false positive;
+$oracle_functions_list_3{'DBTIMEZONE'}{'regex'}        = '\bDBTIMEZONE\b';
+$oracle_functions_list_3{'DECODE'}{'regex'}            = '\bDECODE\s*\(';
+$oracle_functions_list_3{'DENSE_RANK'}{'regex'}        = '\bDENSE_RANK\s*\(';
+$oracle_functions_list_3{'EXTRACT'}{'regex'}           = '\bEXTRACT\s*\(';
+$oracle_functions_list_3{'FIRST'}{'regex'}             = '\b(DENSE_RANK|NULLS)\s*FIRST\b';
+$oracle_functions_list_3{'FORALL'}{'regex'}            = '\bFORALL\b';
+$oracle_functions_list_3{'GREATEST'}{'regex'}          = '\bGREATEST\s*\(';
+$oracle_functions_list_3{'IS NAN'}{'regex'}            = '\bIS\s+NAN\b';
+$oracle_functions_list_3{'IS NOT NAN'}{'regex'}        = '\bIS\s+NOT\s+NAN\b';
+$oracle_functions_list_3{'LAST'}{'regex'}              = '\b(DENSE_RANK|NULLS)\s*LAST\b';
+$oracle_functions_list_3{'LEAST'}{'regex'}             = '\bLEAST\s*\(';
+$oracle_functions_list_3{'LISTAGG'}{'regex'}           = '\bLISTAGG\s*\(';
+$oracle_functions_list_3{'NANVL'}{'regex'}             = '\bNANVL\s*\(';
+$oracle_functions_list_3{'NVL2'}{'regex'}              = '\bNVL2\s*\(';
+$oracle_functions_list_3{'PERCENT_RANK'}{'regex'}      = '\bPERCENT_RANK\s*\(';
+$oracle_functions_list_3{'RANK'}{'regex'}              = '\bRANK\s*\(';
+$oracle_functions_list_3{'REGR_AVGX'}{'regex'}         = '\bREGR_AVGX\s*\(';
+$oracle_functions_list_3{'REGR_AVGY'}{'regex'}         = '\bREGR_AVGY\s*\(';
+$oracle_functions_list_3{'REGR_COUNT'}{'regex'}        = '\bREGR_COUNT\s*\(';
+$oracle_functions_list_3{'REGR_INTERCEPT'}{'regex'}    = '\bREGR_INTERCEPT\s*\(';
+$oracle_functions_list_3{'REGR_R2'}{'regex'}           = '\bREGR_R2\s*\(';
+$oracle_functions_list_3{'REGR_SLOPE'}{'regex'}        = '\bREGR_SLOPE\s*\(';
+$oracle_functions_list_3{'REGR_SXX'}{'regex'}          = '\bREGR_SXX\s*\(';
+$oracle_functions_list_3{'REGR_SXY'}{'regex'}          = '\bREGR_SXY\s*\(';
+$oracle_functions_list_3{'REGR_SYY'}{'regex'}          = '\bREGR_SYY\s*\(';
+$oracle_functions_list_3{'ROUND'}{'regex'}             = '\bROUND\s*\(';
+$oracle_functions_list_3{'ROWID'}{'regex'}             = '\bROWID\b';
+$oracle_functions_list_3{'ROWNUM'}{'regex'}            = '\bROWNUM\b';
+$oracle_functions_list_3{'SEQUENCE'}{'regex'}          = '\bSEQUENCE\b';
+$oracle_functions_list_3{'SINH'}{'regex'}              = '\bSINH\s*\(';
+$oracle_functions_list_3{'SOUNDEX'}{'regex'}           = '\bSOUNDEX\s*\(';
+$oracle_functions_list_3{'TANH'}{'regex'}              = '\bTANH\s*\(';
+$oracle_functions_list_3{'TO_CHAR'}{'regex'}           = '\bTO_CHAR\s*\(';
+$oracle_functions_list_3{'TZ_OFFSET'}{'regex'}         = '\bTZ_OFFSET\s*\(';
+$oracle_functions_list_3{'VARIANCE'}{'regex'}          = '\bVARIANCE\s*\(';
+$oracle_functions_list_3{'VIEW'}{'regex'}              = '\bVIEW\b';
+$oracle_functions_list_3{'VSIZE'}{'regex'}             = '\bVSIZE\s*\(';
+$oracle_functions_list_3{'XMLCONCAT'}{'regex'}         = '\bXMLCONCAT\s*\(';
+$oracle_functions_list_3{'XMLELEMENT'}{'regex'}        = '\bXMLELEMENT\s*\(';
+$oracle_functions_list_3{'XMLEXISTS'}{'regex'}         = '\bXMLEXISTS\s*\(';
+$oracle_functions_list_3{'XMLFOREST'}{'regex'}         = '\bXMLFOREST\s*\(';
+$oracle_functions_list_3{'XMLPARSE'}{'regex'}          = '\bXMLPARSE\s*\(';
+$oracle_functions_list_3{'XMLPI'}{'regex'}             = '\bXMLPI\s*\(';
+$oracle_functions_list_3{'XMLROOT'}{'regex'}           = '\bXMLROOT\s*\(';
+$oracle_functions_list_3{'XMLSERIALIZE'}{'regex'}      = '\bXMLSERIALIZE\s*\(';
+
+# ORA_FUNC_4 - each keyword will be matched with a corresponding regex - level 4
+$oracle_functions_list_4{'APPENDCHILDXML'}{'regex'}               = '\bAPPENDCHILDXML\s*\(';
+$oracle_functions_list_4{'ASCIISTR'}{'regex'}                     = '\bASCIISTR\s*\(';
+$oracle_functions_list_4{'BFILENAME'}{'regex'}                    = '\bBFILENAME\s*\(';
+$oracle_functions_list_4{'CARDINALITY'}{'regex'}                  = '\bCARDINALITY\s*\(';
+$oracle_functions_list_4{'CHARTOROWID'}{'regex'}                  = '\bCHARTOROWID\s*\(';
+$oracle_functions_list_4{'CLUSTER_ID'}{'regex'}                   = '\bCLUSTER_ID\s*\(';
+$oracle_functions_list_4{'CLUSTER_PROBABILITY'}{'regex'}          = '\bCLUSTER_PROBABILITY\s*\(';
+$oracle_functions_list_4{'CLUSTER_SET'}{'regex'}                  = '\bCLUSTER_SET\s*\(';
+$oracle_functions_list_4{'COLLECT'}{'regex'}                      = '\bCOLLECT\s*\(';
+$oracle_functions_list_4{'COMPOSE'}{'regex'}                      = '\bCOMPOSE\s*\(';
+$oracle_functions_list_4{'CONNECT BY'}{'regex'}                   = '\bCONNECT\s+BY\b';
+$oracle_functions_list_4{'CONVERT'}{'regex'}                      = '\bCONVERT\s*\(';
+$oracle_functions_list_4{'CORR_K'}{'regex'}                       = '\bCORR_K\s*\(';
+$oracle_functions_list_4{'CORR_S'}{'regex'}                       = '\bCORR_S\s*\(';
+$oracle_functions_list_4{'CUME_DIST'}{'regex'}                    = '\bCUME_DIST\s*\(';
+$oracle_functions_list_4{'CV'}{'regex'}                           = '\bCV\s*\(';
+$oracle_functions_list_4{'DECOMPOSE'}{'regex'}                    = '\bDECOMPOSE\s*\(';
+$oracle_functions_list_4{'DELETEXML'}{'regex'}                    = '\bDELETEXML\s*\(';
+$oracle_functions_list_4{'DEPTH'}{'regex'}                        = '\bDEPTH\s*\(';
+$oracle_functions_list_4{'DEREF'}{'regex'}                        = '\bDEREF\s*\(';
+$oracle_functions_list_4{'DUMP'}{'regex'}                         = '\bDUMP\b', # use the parenthesis ;
+$oracle_functions_list_4{'EMPTY_BLOB'}{'regex'}                   = '\bEMPTY_BLOB\s*\(';
+$oracle_functions_list_4{'EMPTY_CLOB'}{'regex'}                   = '\bEMPTY_CLOB\s*\(';
+$oracle_functions_list_4{'EXISTSNODE'}{'regex'}                   = '\bEXISTSNODE\s*\(';
+$oracle_functions_list_4{'EXTRACTVALUE'}{'regex'}                 = '\bEXTRACTVALUE\s*\(';
+$oracle_functions_list_4{'FEATURE_ID'}{'regex'}                   = '\bFEATURE_ID\s*\(';
+$oracle_functions_list_4{'FEATURE_SET'}{'regex'}                  = '\bFEATURE_SET\s*\(';
+$oracle_functions_list_4{'FEATURE_VALUE'}{'regex'}                = '\bFEATURE_VALUE\s*\(';
+$oracle_functions_list_4{'FROM_TZ'}{'regex'}                      = '\bFROM_TZ\s*\(';
+$oracle_functions_list_4{'GROUP_ID'}{'regex'}                     = '\bGROUP_ID\s*\(';
+$oracle_functions_list_4{'GROUPING'}{'regex'}                     = '\bGROUPING\b', # use the parenthesis ;
+$oracle_functions_list_4{'GROUPING_ID'}{'regex'}                  = '\bGROUPING_ID\s*\(';
+$oracle_functions_list_4{'HEXTORAW'}{'regex'}                     = '\bHEXTORAW\s*\(';
+$oracle_functions_list_4{'INSERTCHILDXML'}{'regex'}               = '\bINSERTCHILDXML\s*\(';
+$oracle_functions_list_4{'INSERTXMLBEFORE'}{'regex'}              = '\bINSERTXMLBEFORE\s*\(';
+$oracle_functions_list_4{'INSTR'}{'regex'}                        = '\bINSTR[BC24]?\s*\(';
+$oracle_functions_list_4{'ITERATION_NUMBER'}{'regex'}             = '\bITERATION_NUMBER\b';
+$oracle_functions_list_4{'LAST_DAY'}{'regex'}                     = '\bLAST_DAY\s*\(';
+$oracle_functions_list_4{'LENGTH2'}{'regex'}                      = '\bLENGTH2\s*\(';
+$oracle_functions_list_4{'LENGTH4'}{'regex'}                      = '\bLENGTH4\s*\(';
+$oracle_functions_list_4{'LEVEL'}{'regex'}                        = '(,|\s+)\bLEVEL\s*(,|FROM)', # Pseudo co;
+$oracle_functions_list_4{'MAKE_REF'}{'regex'}                     = '\bMAKE_REF\b';
+$oracle_functions_list_4{'MEDIAN'}{'regex'}                       = '\bMEDIAN\s*\(';
+$oracle_functions_list_4{'MERGE'}{'regex'}                        = '\bMERGE\s+',  # MERGE [hint] INTO ..;
+$oracle_functions_list_4{'MONTHS_BETWEEN'}{'regex'}               = '\bMONTHS_BETWEEN\s*\(';
+$oracle_functions_list_4{'NEW_TIME'}{'regex'}                     = '\bNEW_TIME\s*\(';
+$oracle_functions_list_4{'NEXT_DAY'}{'regex'}                     = '\bNEXT_DAY\s*\(';
+$oracle_functions_list_4{'NLS_CHARSET_DECL_LEN'}{'regex'}         = '\bNLS_CHARSET_DECL_LEN\s*\(';
+$oracle_functions_list_4{'NLS_CHARSET_ID'}{'regex'}               = '\bNLS_CHARSET_ID\s*\(';
+$oracle_functions_list_4{'NLS_CHARSET_NAME'}{'regex'}             = '\bNLS_CHARSET_NAME\s*\(';
+$oracle_functions_list_4{'NLS_INITCAP'}{'regex'}                  = '\bNLS_INITCAP\s*\(';
+$oracle_functions_list_4{'NLS_LOWER'}{'regex'}                    = '\bNLS_LOWER\s*\(';
+$oracle_functions_list_4{'NLS_UPPER'}{'regex'}                    = '\bNLS_UPPER\s*\(';
+$oracle_functions_list_4{'NLSSORT'}{'regex'}                      = '\bNLSSORT\s*\(';
+$oracle_functions_list_4{'NUMTODSINTERVAL'}{'regex'}              = '\bNUMTODSINTERVAL\s*\(';
+$oracle_functions_list_4{'NUMTOYMINTERVAL'}{'regex'}              = '\bNUMTOYMINTERVAL\s*\(';
+$oracle_functions_list_4{'ORA_HASH'}{'regex'}                     = '\bORA_HASH\s*\(';
+$oracle_functions_list_4{'PATH'}{'regex'}                         = '\bPATH\s*\(';
+$oracle_functions_list_4{'PERCENTILE_CONT'}{'regex'}              = '\bPERCENTILE_CONT\s*\(';
+$oracle_functions_list_4{'PERCENTILE_DISC'}{'regex'}              = '\bPERCENTILE_DISC\s*\(';
+$oracle_functions_list_4{'POWERMULTISET'}{'regex'}                = '\bPOWERMULTISET\s*\(';
+$oracle_functions_list_4{'POWERMULTISET_BY_CARDINALITY'}{'regex'} = '\bPOWERMULTISET_BY_CARDINALITY\s*\(';
+$oracle_functions_list_4{'PREDICTION'}{'regex'}                   = '\bPREDICTION\s*\(';
+$oracle_functions_list_4{'PREDICTION_COST'}{'regex'}              = '\bPREDICTION_COST\s*\(';
+$oracle_functions_list_4{'PREDICTION_DETAILS'}{'regex'}           = '\bPREDICTION_DETAILS\s*\(';
+$oracle_functions_list_4{'PREDICTION_PROBABILITY'}{'regex'}       = '\bPREDICTION_PROBABILITY\s*\(';
+$oracle_functions_list_4{'PREDICTION_SET'}{'regex'}               = '\bPREDICTION_SET\s*\(';
+$oracle_functions_list_4{'PRESENTNNV'}{'regex'}                   = '\bPRESENTNNV\s*\(';
+$oracle_functions_list_4{'PRESENTV'}{'regex'}                     = '\bPRESENTV\s*\(';
+$oracle_functions_list_4{'PREVIOUS'}{'regex'}                     = '\bPREVIOUS\s*\(';
+$oracle_functions_list_4{'RAWTOHEX'}{'regex'}                     = '\bRAWTOHEX\s*\(';
+$oracle_functions_list_4{'RAWTONHEX'}{'regex'}                    = '\bRAWTONHEX\s*\(';
+$oracle_functions_list_4{'REF'}{'regex'}                          = '\bREF\s*\(';
+$oracle_functions_list_4{'REFTOHEX'}{'regex'}                     = '\bREFTOHEX\s*\(';
+$oracle_functions_list_4{'REGEXP_INSTR'}{'regex'}                 = '\bREGEXP_INSTR\s*\(';
+$oracle_functions_list_4{'REGEXP_REPLACE'}{'regex'}               = '\bREGEXP_REPLACE\s*\(';
+$oracle_functions_list_4{'REGEXP_SUBSTR'}{'regex'}                = '\bREGEXP_SUBSTR\s*\(';
+$oracle_functions_list_4{'ROWIDTOCHAR'}{'regex'}                  = '\bROWIDTOCHAR\s*\(';
+$oracle_functions_list_4{'ROWIDTONCHAR'}{'regex'}                 = '\bROWIDTONCHAR\s*\(';
+$oracle_functions_list_4{'SCN_TO_TIMESTAMP'}{'regex'}             = '\bSCN_TO_TIMESTAMP\s*\(';
+$oracle_functions_list_4{'SESSIONTIMEZONE'}{'regex'}              = '\bSESSIONTIMEZONE\b';
+$oracle_functions_list_4{'SET'}{'regex'}                          = '\bSET\s*\(';
+$oracle_functions_list_4{'STATS_BINOMIAL_TEST'}{'regex'}          = '\bSTATS_BINOMIAL_TEST\s*\(';
+$oracle_functions_list_4{'STATS_CROSSTAB'}{'regex'}               = '\bSTATS_CROSSTAB\s*\(';
+$oracle_functions_list_4{'STATS_F_TEST'}{'regex'}                 = '\bSTATS_F_TEST\s*\(';
+$oracle_functions_list_4{'STATS_KS_TEST'}{'regex'}                = '\bSTATS_KS_TEST\s*\(';
+$oracle_functions_list_4{'STATS_MODE'}{'regex'}                   = '\bSTATS_MODE\s*\(';
+$oracle_functions_list_4{'STATS_MW_TEST'}{'regex'}                = '\bSTATS_MW_TEST\s*\(';
+$oracle_functions_list_4{'STATS_ONE_WAY_ANOVA'}{'regex'}          = '\bSTATS_ONE_WAY_ANOVA\s*\(';
+$oracle_functions_list_4{'STATS_T_TEST_'}{'regex'}                = '\bSTATS_T_TEST',    # _[ONE|PAIRED|INDEP|INDEPU;
+$oracle_functions_list_4{'STATS_WSR_TEST'}{'regex'}               = '\bSTATS_WSR_TEST\s*\(';
+$oracle_functions_list_4{'SYNONYM'}{'regex'}                      = '\bSYNONYM\b';
+$oracle_functions_list_4{'SYS_CONNECT_BY_PATH'}{'regex'}          = '\bSYS_CONNECT_BY_PATH\s*\(';
+$oracle_functions_list_4{'SYS_CONTEXT'}{'regex'}                  = '\bSYS_CONTEXT\s*\(';
+$oracle_functions_list_4{'SYS_DBURIGEN'}{'regex'}                 = '\bSYS_DBURIGEN\s*\(';
+$oracle_functions_list_4{'SYS_EXTRACT_UTC'}{'regex'}              = '\bSYS_EXTRACT_UTC\s*\(';
+$oracle_functions_list_4{'SYS_GUID'}{'regex'}                     = '\bSYS_GUID\s*\(';
+$oracle_functions_list_4{'SYS_TYPEID'}{'regex'}                   = '\bSYS_TYPEID\s*\(';
+$oracle_functions_list_4{'SYS_XMLAGG'}{'regex'}                   = '\bSYS_XMLAGG\s*\(';
+$oracle_functions_list_4{'SYS_XMLGEN'}{'regex'}                   = '\bSYS_XMLGEN\s*\(';
+$oracle_functions_list_4{'TIMESTAMP_TO_SCN'}{'regex'}             = '\bTIMESTAMP_TO_SCN\s*\(';
+$oracle_functions_list_4{'TO_BINARY_DOUBLE'}{'regex'}             = '\bTO_BINARY_DOUBLE\s*\(';
+$oracle_functions_list_4{'TO_CLOB'}{'regex'}                      = '\bTO_CLOB\s*\(';
+$oracle_functions_list_4{'TO_DSINTERVAL'}{'regex'}                = '\bTO_DSINTERVAL\s*\(';
+$oracle_functions_list_4{'TO_LOB'}{'regex'}                       = '\bTO_LOB\s*\(';
+$oracle_functions_list_4{'TO_MULTI_BYTE'}{'regex'}                = '\bTO_MULTI_BYTE\s*\(';
+$oracle_functions_list_4{'TO_NCHAR'}{'regex'}                     = '\bTO_NCHAR\s*\(';
+$oracle_functions_list_4{'TO_NCLOB'}{'regex'}                     = '\bTO_NCLOB\s*\(';
+$oracle_functions_list_4{'TO_SINGLE_BYTE'}{'regex'}               = '\bTO_SINGLE_BYTE\s*\(';
+$oracle_functions_list_4{'TO_YMINTERVAL'}{'regex'}                = '\bTO_YMINTERVAL\s*\(';
+$oracle_functions_list_4{'TREAT'}{'regex'}                        = '\bTREAT\s*\(';
+$oracle_functions_list_4{'UID'}{'regex'}                          = '\bUID\b';
+$oracle_functions_list_4{'UNISTR'}{'regex'}                       = '\bUNISTR\s*\(';
+$oracle_functions_list_4{'UPDATEXML'}{'regex'}                    = '\bUPDATEXML\s*\(';
+$oracle_functions_list_4{'USERENV'}{'regex'}                      = '\bUSERENV\s*\(';
+$oracle_functions_list_4{'XMLCDATA'}{'regex'}                     = '\bXMLCDATA\s*\(';
+$oracle_functions_list_4{'XMLCOLATTVAL'}{'regex'}                 = '\bXMLCOLATTVAL\s*\(';
+$oracle_functions_list_4{'XMLQUERY'}{'regex'}                     = '\bXMLQUERY\s*\(';
+$oracle_functions_list_4{'XMLSEQUENCE'}{'regex'}                  = '\bXMLSEQUENCE\s*\(';
+$oracle_functions_list_4{'XMLTABLE'}{'regex'}                     = '\bXMLTABLE\s*\(';
+$oracle_functions_list_4{'XMLTRANSFORM'}{'regex'}                 = '\bXMLTRANSFORM\s*\(';
+
+# ORA_FUNC_EXTRA - comments/links on oracle functions
+$oracle_functions_list_3{'ORACLE_OUTER_JOIN'}{'sourcedocumentation'} = '';
+$oracle_functions_list_3{'ORACLE_OUTER_JOIN'}{'pgdocumentation'} = '';
+$oracle_functions_list_3{'ORACLE_OUTER_JOIN'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_3{'ORACLE_OUTER_JOIN'}{'comments'} = q{Oracle-style joins need to be rewritten with an ANSI outer join.};
+$oracle_functions_list_3{'HINTS'}{'sourcedocumentation'} = '';
+$oracle_functions_list_3{'HINTS'}{'pgdocumentation'} = '';
+$oracle_functions_list_3{'HINTS'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_3{'HINTS'}{'comments'} = q{There is no equivalent to Oracle style hints in PostgreSQL. Special attention should be given after the migration to performance issues on this query. The planner's behaviour could be adjusted by changing sessions parameters. };
+$oracle_functions_list_1{'ABS'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions009.htm';
+$oracle_functions_list_1{'ABS'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-math.html';
+$oracle_functions_list_1{'ABS'}{'pginstruction'} = 'abs';
+$oracle_functions_list_1{'ABS'}{'comments'} = q{Beware of implicit conversions};
+$oracle_functions_list_1{'ACOS'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions010.htm';
+$oracle_functions_list_1{'ACOS'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-math.html';
+$oracle_functions_list_1{'ACOS'}{'pginstruction'} = 'acos';
+$oracle_functions_list_1{'ACOS'}{'comments'} = q{Beware of implicit conversions};
+$oracle_functions_list_3{'ADD_MONTHS'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions011.htm';
+$oracle_functions_list_3{'ADD_MONTHS'}{'pgdocumentation'} = '';
+$oracle_functions_list_3{'ADD_MONTHS'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_3{'ADD_MONTHS'}{'comments'} = q{A function can be created. For example: CREATE OR REPLACE FUNCTION public.add_months(date date, months integer)
+ RETURNS date
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+RETURN (date + (months * '1 month' :: interval)) :: date;
+END;
+$function$};
+$oracle_functions_list_4{'APPENDCHILDXML'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions012.htm';
+$oracle_functions_list_4{'APPENDCHILDXML'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'APPENDCHILDXML'}{'pginstruction'} = '';
+$oracle_functions_list_4{'APPENDCHILDXML'}{'comments'} = q{};
+$oracle_functions_list_1{'ASCII'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions014.htm';
+$oracle_functions_list_1{'ASCII'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-string.html';
+$oracle_functions_list_1{'ASCII'}{'pginstruction'} = 'ascii';
+$oracle_functions_list_1{'ASCII'}{'comments'} = q{Direct conversion};
+$oracle_functions_list_4{'ASCIISTR'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions015.htm';
+$oracle_functions_list_4{'ASCIISTR'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'ASCIISTR'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_4{'ASCIISTR'}{'comments'} = q{};
+$oracle_functions_list_1{'ASIN'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions016.htm';
+$oracle_functions_list_1{'ASIN'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-math.html';
+$oracle_functions_list_1{'ASIN'}{'pginstruction'} = 'asin';
+$oracle_functions_list_1{'ASIN'}{'comments'} = q{Beware of implicit conversions};
+$oracle_functions_list_1{'ATAN'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions017.htm';
+$oracle_functions_list_1{'ATAN'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-math.html';
+$oracle_functions_list_1{'ATAN'}{'pginstruction'} = 'atan';
+$oracle_functions_list_1{'ATAN'}{'comments'} = q{Beware of implicit conversions};
+$oracle_functions_list_1{'ATAN2'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions018.htm';
+$oracle_functions_list_1{'ATAN2'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-math.html';
+$oracle_functions_list_1{'ATAN2'}{'pginstruction'} = 'atan2';
+$oracle_functions_list_1{'ATAN2'}{'comments'} = q{Beware of implicit conversions};
+$oracle_functions_list_1{'AVG'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions019.htm';
+$oracle_functions_list_1{'AVG'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/tutorial-agg.html';
+$oracle_functions_list_1{'AVG'}{'pginstruction'} = 'avg';
+$oracle_functions_list_1{'AVG'}{'comments'} = q{Beware of implicit conversions. 
+Beware of AVG(...) OVER expression};
+$oracle_functions_list_1{'BETWEEN'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/conditions012.htm';
+$oracle_functions_list_1{'BETWEEN'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-comparison.html';
+$oracle_functions_list_1{'BETWEEN'}{'pginstruction'} = 'between';
+$oracle_functions_list_1{'BETWEEN'}{'comments'} = q{Direct conversion};
+$oracle_functions_list_4{'BFILENAME'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions020.htm';
+$oracle_functions_list_4{'BFILENAME'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'BFILENAME'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_4{'BFILENAME'}{'comments'} = q{};
+$oracle_functions_list_4{'BFILENAME'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions080.htm';
+$oracle_functions_list_4{'BFILENAME'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'BFILENAME'}{'pginstruction'} = '';
+$oracle_functions_list_4{'BFILENAME'}{'comments'} = q{};
+$oracle_functions_list_2{'BIN_TO_NUM'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions021.htm';
+$oracle_functions_list_2{'BIN_TO_NUM'}{'pgdocumentation'} = '';
+$oracle_functions_list_2{'BIN_TO_NUM'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_2{'BIN_TO_NUM'}{'comments'} = q{};
+$oracle_functions_list_3{'BITAND'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions022.htm';
+$oracle_functions_list_3{'BITAND'}{'pgdocumentation'} = '';
+$oracle_functions_list_3{'BITAND'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_3{'BITAND'}{'comments'} = q{Can be implement with a function such as this one:
+CREATE FUNCTION bitand (int, int)
+RETURNS int AS $$
+SELECT $1 & $2;
+$$ LANGUAGE sql IMMUTABLE STRICT;};
+$oracle_functions_list_4{'CARDINALITY'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions023.htm';
+$oracle_functions_list_4{'CARDINALITY'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'CARDINALITY'}{'pginstruction'} = '';
+$oracle_functions_list_4{'CARDINALITY'}{'comments'} = q{};
+$oracle_functions_list_3{'CAST'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions024.htm';
+$oracle_functions_list_3{'CAST'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/sql-expressions.html';
+$oracle_functions_list_3{'CAST'}{'pginstruction'} = 'cast';
+$oracle_functions_list_3{'CAST'}{'comments'} = q{The PostgreSQL function does not handle the MULTISET clause. Beware of implicit conversions.};
+$oracle_functions_list_1{'CEIL'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions025.htm';
+$oracle_functions_list_1{'CEIL'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-math.html';
+$oracle_functions_list_1{'CEIL'}{'pginstruction'} = 'ceil';
+$oracle_functions_list_1{'CEIL'}{'comments'} = q{Beware of implicit conversions};
+$oracle_functions_list_4{'CHARTOROWID'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions026.htm';
+$oracle_functions_list_4{'CHARTOROWID'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'CHARTOROWID'}{'pginstruction'} = '';
+$oracle_functions_list_4{'CHARTOROWID'}{'comments'} = q{};
+$oracle_functions_list_3{'CHR'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions027.htm';
+$oracle_functions_list_3{'CHR'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-string.html';
+$oracle_functions_list_3{'CHR'}{'pginstruction'} = 'chr';
+$oracle_functions_list_3{'CHR'}{'comments'} = q{The PostgreSQL function does not support the USING clause. Conversion can therefore be direct for simple case but more complex if this clause is used.};
+$oracle_functions_list_4{'CLUSTER_ID'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions030.htm';
+$oracle_functions_list_4{'CLUSTER_ID'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'CLUSTER_ID'}{'pginstruction'} = '';
+$oracle_functions_list_4{'CLUSTER_ID'}{'comments'} = q{};
+$oracle_functions_list_4{'CLUSTER_PROBABILITY'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions031.htm';
+$oracle_functions_list_4{'CLUSTER_PROBABILITY'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'CLUSTER_PROBABILITY'}{'pginstruction'} = '';
+$oracle_functions_list_4{'CLUSTER_PROBABILITY'}{'comments'} = q{};
+$oracle_functions_list_4{'CLUSTER_SET'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions032.htm';
+$oracle_functions_list_4{'CLUSTER_SET'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'CLUSTER_SET'}{'pginstruction'} = '';
+$oracle_functions_list_4{'CLUSTER_SET'}{'comments'} = q{};
+$oracle_functions_list_1{'COALESCE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions033.htm';
+$oracle_functions_list_1{'COALESCE'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-conditional.html';
+$oracle_functions_list_1{'COALESCE'}{'pginstruction'} = 'COALESCE';
+$oracle_functions_list_1{'COALESCE'}{'comments'} = q{Beware of implicit conversions and datetime types };
+$oracle_functions_list_4{'COLLECT'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions034.htm';
+$oracle_functions_list_4{'COLLECT'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'COLLECT'}{'pginstruction'} = '';
+$oracle_functions_list_4{'COLLECT'}{'comments'} = q{};
+$oracle_functions_list_2{'COMMIT'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/statements_4011.htm';
+$oracle_functions_list_2{'COMMIT'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/sql-commit.html';
+$oracle_functions_list_2{'COMMIT'}{'pginstruction'} = 'COMMIT';
+$oracle_functions_list_2{'COMMIT'}{'comments'} = q{Pay attention to the autocommit mode.  PostgreSQL only supports the WORK and TRANSACTION parameters. In a function, autocommit is also implicit.};
+$oracle_functions_list_4{'COMPOSE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions035.htm';
+$oracle_functions_list_4{'COMPOSE'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'COMPOSE'}{'pginstruction'} = '';
+$oracle_functions_list_4{'COMPOSE'}{'comments'} = q{};
+$oracle_functions_list_2{'CONCAT'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions040.htm';
+$oracle_functions_list_2{'CONCAT'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-string.html';
+$oracle_functions_list_2{'CONCAT'}{'pginstruction'} = 'concat';
+$oracle_functions_list_2{'CONCAT'}{'comments'} = q{The Oracle function only supports 2 parameters whereas PostgreSQL supports more.This function cannot be used with binary types on PostgreSQL.};
+$oracle_functions_list_4{'CONNECT BY'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/queries003.htm';
+$oracle_functions_list_4{'CONNECT BY'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/queries-with.html';
+$oracle_functions_list_4{'CONNECT BY'}{'pginstruction'} = 'WITH RECURSIVE';
+$oracle_functions_list_4{'CONNECT BY'}{'comments'} = q{};
+$oracle_functions_list_4{'CONVERT'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions041.htm';
+$oracle_functions_list_4{'CONVERT'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'CONVERT'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_4{'CONVERT'}{'comments'} = q{};
+$oracle_functions_list_2{'CORR'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions042.htm';
+$oracle_functions_list_2{'CORR'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-aggregate.html';
+$oracle_functions_list_2{'CORR'}{'pginstruction'} = 'corr';
+$oracle_functions_list_2{'CORR'}{'comments'} = q{Pay attention to implicit conversions and if an OVER clause is used.};
+$oracle_functions_list_4{'CORR_K'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions043.htm';
+$oracle_functions_list_4{'CORR_K'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'CORR_K'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_4{'CORR_K'}{'comments'} = q{};
+$oracle_functions_list_4{'CORR_S'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions043.htm';
+$oracle_functions_list_4{'CORR_S'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'CORR_S'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_4{'CORR_S'}{'comments'} = q{};
+$oracle_functions_list_1{'COS'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions044.htm';
+$oracle_functions_list_1{'COS'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-math.html';
+$oracle_functions_list_1{'COS'}{'pginstruction'} = 'cos';
+$oracle_functions_list_1{'COS'}{'comments'} = q{Beware of implicit conversions};
+$oracle_functions_list_2{'COSH'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions045.htm';
+$oracle_functions_list_2{'COSH'}{'pgdocumentation'} = '';
+$oracle_functions_list_2{'COSH'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_2{'COSH'}{'comments'} = q{A function can be created if necessary.};
+$oracle_functions_list_1{'COUNT'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions046.htm';
+$oracle_functions_list_1{'COUNT'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-aggregate.html';
+$oracle_functions_list_1{'COUNT'}{'pginstruction'} = 'count';
+$oracle_functions_list_1{'COUNT'}{'comments'} = q{Direct conversion};
+$oracle_functions_list_2{'COVAR_POP'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions047.htm';
+$oracle_functions_list_2{'COVAR_POP'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-aggregate.html';
+$oracle_functions_list_2{'COVAR_POP'}{'pginstruction'} = 'covar_pop';
+$oracle_functions_list_2{'COVAR_POP'}{'comments'} = q{Pay attention to implicit conversions and if an OVER clause is used. In this example, the date difference will be an integer, which might not be the result of the implicit conversion made by Oracle.};
+$oracle_functions_list_2{'COVAR_SAMP'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions048.htm';
+$oracle_functions_list_2{'COVAR_SAMP'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-aggregate.html';
+$oracle_functions_list_2{'COVAR_SAMP'}{'pginstruction'} = 'covar_samp';
+$oracle_functions_list_2{'COVAR_SAMP'}{'comments'} = q{Pay attention to implicit conversions and if an OVER clause is used.};
+$oracle_functions_list_4{'CUME_DIST'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions050.htm';
+$oracle_functions_list_4{'CUME_DIST'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-window.html';
+$oracle_functions_list_4{'CUME_DIST'}{'pginstruction'} = 'cume_dist';
+$oracle_functions_list_4{'CUME_DIST'}{'comments'} = q{The PostgreSQL function does not handle the WITHIN GROUP clause. Have a look at DENSE_RANK for a similar rewrite.};
+$oracle_functions_list_1{'CURRENT_DATE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions051.htm';
+$oracle_functions_list_1{'CURRENT_DATE'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-datetime.html';
+$oracle_functions_list_1{'CURRENT_DATE'}{'pginstruction'} = 'current_date';
+$oracle_functions_list_1{'CURRENT_DATE'}{'comments'} = q{};
+$oracle_functions_list_1{'CURRENT_TIMESTAMP'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions052.htm';
+$oracle_functions_list_1{'CURRENT_TIMESTAMP'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-datetime.html';
+$oracle_functions_list_1{'CURRENT_TIMESTAMP'}{'pginstruction'} = 'current_timestamp';
+$oracle_functions_list_1{'CURRENT_TIMESTAMP'}{'comments'} = q{The return value will always be the same within a transaction bloc (BEGIN...END)};
+$oracle_functions_list_2{'CURRVAL'}{'sourcedocumentation'} = 'https://docs.oracle.com/cd/B19306_01/server.102/b14200/pseudocolumns002.htm';
+$oracle_functions_list_2{'CURRVAL'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-sequence.html';
+$oracle_functions_list_2{'CURRVAL'}{'pginstruction'} = 'currval';
+$oracle_functions_list_2{'CURRVAL'}{'comments'} = q{The Oracle pseudo-column needs to be translated to a function in PostgreSQL.};
+$oracle_functions_list_4{'CV'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions053.htm';
+$oracle_functions_list_4{'CV'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'CV'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_4{'CV'}{'comments'} = q{};
+$oracle_functions_list_3{'DBTIMEZONE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions056.htm';
+$oracle_functions_list_3{'DBTIMEZONE'}{'pgdocumentation'} = '';
+$oracle_functions_list_3{'DBTIMEZONE'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_3{'DBTIMEZONE'}{'comments'} = q{};
+$oracle_functions_list_3{'DECODE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions057.htm';
+$oracle_functions_list_3{'DECODE'}{'pgdocumentation'} = '';
+$oracle_functions_list_3{'DECODE'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_3{'DECODE'}{'comments'} = q{Code needs to be rewritten with the help of the CASE instruction.};
+$oracle_functions_list_4{'DECOMPOSE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions058.htm';
+$oracle_functions_list_4{'DECOMPOSE'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'DECOMPOSE'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_4{'DECOMPOSE'}{'comments'} = q{See http://freecode.com/projects/utf8proc for an old extension that provides this fonctionnality.};
+$oracle_functions_list_4{'DELETEXML'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions059.htm';
+$oracle_functions_list_4{'DELETEXML'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'DELETEXML'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_4{'DELETEXML'}{'comments'} = q{Deprecated function in Oracle.};
+$oracle_functions_list_3{'DENSE_RANK'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions060.htm';
+$oracle_functions_list_3{'DENSE_RANK'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-window.html';
+$oracle_functions_list_3{'DENSE_RANK'}{'pginstruction'} = 'dense_rank';
+$oracle_functions_list_3{'DENSE_RANK'}{'comments'} = q{Could need a heavy rewrite with a clause such as WITHIN GROUP.};
+$oracle_functions_list_4{'DEPTH'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions061.htm';
+$oracle_functions_list_4{'DEPTH'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'DEPTH'}{'pginstruction'} = '';
+$oracle_functions_list_4{'DEPTH'}{'comments'} = q{};
+$oracle_functions_list_4{'DEREF'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions062.htm';
+$oracle_functions_list_4{'DEREF'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'DEREF'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_4{'DEREF'}{'comments'} = q{};
+$oracle_functions_list_1{'DUAL'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/queries009.htm';
+$oracle_functions_list_1{'DUAL'}{'pgdocumentation'} = '';
+$oracle_functions_list_1{'DUAL'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_1{'DUAL'}{'comments'} = q{Useless on PostgreSQL };
+$oracle_functions_list_4{'DUMP'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions063.htm';
+$oracle_functions_list_4{'DUMP'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'DUMP'}{'pginstruction'} = '';
+$oracle_functions_list_4{'DUMP'}{'comments'} = q{};
+$oracle_functions_list_4{'EMPTY_BLOB'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions064.htm';
+$oracle_functions_list_4{'EMPTY_BLOB'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'EMPTY_BLOB'}{'pginstruction'} = '';
+$oracle_functions_list_4{'EMPTY_BLOB'}{'comments'} = q{};
+$oracle_functions_list_4{'EMPTY_CLOB'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions064.htm';
+$oracle_functions_list_4{'EMPTY_CLOB'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'EMPTY_CLOB'}{'pginstruction'} = '';
+$oracle_functions_list_4{'EMPTY_CLOB'}{'comments'} = q{};
+$oracle_functions_list_4{'EXISTSNODE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions065.htm';
+$oracle_functions_list_4{'EXISTSNODE'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'EXISTSNODE'}{'pginstruction'} = '';
+$oracle_functions_list_4{'EXISTSNODE'}{'comments'} = q{Deprecated function in Oracle.};
+$oracle_functions_list_1{'EXP'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions066.htm';
+$oracle_functions_list_1{'EXP'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-math.html';
+$oracle_functions_list_1{'EXP'}{'pginstruction'} = 'exp';
+$oracle_functions_list_1{'EXP'}{'comments'} = q{Direct conversion};
+$oracle_functions_list_3{'EXTRACT'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions067.htm';
+$oracle_functions_list_3{'EXTRACT'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-datetime.html';
+$oracle_functions_list_3{'EXTRACT'}{'pginstruction'} = 'extract';
+$oracle_functions_list_3{'EXTRACT'}{'comments'} = q{EXTRACT can be used on XML or datetime types. Pay attention to precision (9 on Oracle, 6 on PostgreSQL by default).};
+$oracle_functions_list_4{'EXTRACTVALUE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions069.htm';
+$oracle_functions_list_4{'EXTRACTVALUE'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'EXTRACTVALUE'}{'pginstruction'} = '';
+$oracle_functions_list_4{'EXTRACTVALUE'}{'comments'} = q{};
+$oracle_functions_list_4{'FEATURE_ID'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions071.htm';
+$oracle_functions_list_4{'FEATURE_ID'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'FEATURE_ID'}{'pginstruction'} = '';
+$oracle_functions_list_4{'FEATURE_ID'}{'comments'} = q{};
+$oracle_functions_list_4{'FEATURE_SET'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions072.htm';
+$oracle_functions_list_4{'FEATURE_SET'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'FEATURE_SET'}{'pginstruction'} = '';
+$oracle_functions_list_4{'FEATURE_SET'}{'comments'} = q{};
+$oracle_functions_list_4{'FEATURE_VALUE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions073.htm';
+$oracle_functions_list_4{'FEATURE_VALUE'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'FEATURE_VALUE'}{'pginstruction'} = '';
+$oracle_functions_list_4{'FEATURE_VALUE'}{'comments'} = q{};
+$oracle_functions_list_3{'FIRST'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions074.htm';
+$oracle_functions_list_3{'FIRST'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-window.html';
+$oracle_functions_list_3{'FIRST'}{'pginstruction'} = 'first_value';
+$oracle_functions_list_3{'FIRST'}{'comments'} = q{};
+$oracle_functions_list_1{'FLOOR'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions076.htm';
+$oracle_functions_list_1{'FLOOR'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-math.html';
+$oracle_functions_list_1{'FLOOR'}{'pginstruction'} = 'floor';
+$oracle_functions_list_1{'FLOOR'}{'comments'} = q{};
+$oracle_functions_list_4{'FROM_TZ'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions077.htm';
+$oracle_functions_list_4{'FROM_TZ'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'FROM_TZ'}{'pginstruction'} = '';
+$oracle_functions_list_4{'FROM_TZ'}{'comments'} = q{};
+$oracle_functions_list_3{'GREATEST'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions078.htm';
+$oracle_functions_list_3{'GREATEST'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-conditional.html';
+$oracle_functions_list_3{'GREATEST'}{'pginstruction'} = 'greatest';
+$oracle_functions_list_3{'GREATEST'}{'comments'} = q{Beware of implicit conversions};
+$oracle_functions_list_4{'GROUP_ID'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions079.htm';
+$oracle_functions_list_4{'GROUP_ID'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'GROUP_ID'}{'pginstruction'} = '';
+$oracle_functions_list_4{'GROUP_ID'}{'comments'} = q{};
+$oracle_functions_list_4{'GROUPING_ID'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions081.htm';
+$oracle_functions_list_4{'GROUPING_ID'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'GROUPING_ID'}{'pginstruction'} = '';
+$oracle_functions_list_4{'GROUPING_ID'}{'comments'} = q{};
+$oracle_functions_list_4{'HEXTORAW'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions082.htm';
+$oracle_functions_list_4{'HEXTORAW'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'HEXTORAW'}{'pginstruction'} = '';
+$oracle_functions_list_4{'HEXTORAW'}{'comments'} = q{};
+$oracle_functions_list_1{'INITCAP'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions083.htm';
+$oracle_functions_list_1{'INITCAP'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-string.html';
+$oracle_functions_list_1{'INITCAP'}{'pginstruction'} = 'initcap';
+$oracle_functions_list_1{'INITCAP'}{'comments'} = q{};
+$oracle_functions_list_4{'INSERTCHILDXML'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions084.htm';
+$oracle_functions_list_4{'INSERTCHILDXML'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'INSERTCHILDXML'}{'pginstruction'} = '';
+$oracle_functions_list_4{'INSERTCHILDXML'}{'comments'} = q{};
+$oracle_functions_list_4{'INSERTXMLBEFORE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions088.htm';
+$oracle_functions_list_4{'INSERTXMLBEFORE'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'INSERTXMLBEFORE'}{'pginstruction'} = '';
+$oracle_functions_list_4{'INSERTXMLBEFORE'}{'comments'} = q{};
+$oracle_functions_list_4{'INSTR'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions089.htm';
+$oracle_functions_list_4{'INSTR'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-string.html';
+$oracle_functions_list_4{'INSTR'}{'pginstruction'} = 'strpos';
+$oracle_functions_list_4{'INSTR'}{'comments'} = q{If the Oracle function only takes the first two arguments, then strpos can be used. Other arguments are not implemented in PostgreSQL. If this function is frequently used, it could be created in the following way:  https://www.postgresql.org/docs/current/static/plpgsql-porting.html#PLPGSQL-PORTING-APPENDIX };
+$oracle_functions_list_3{'IS NAN'}{'sourcedocumentation'} = '';
+$oracle_functions_list_3{'IS NAN'}{'pgdocumentation'} = '';
+$oracle_functions_list_3{'IS NAN'}{'pginstruction'} = '';
+$oracle_functions_list_3{'IS NAN'}{'comments'} = q{};
+$oracle_functions_list_4{'ITERATION_NUMBER'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions090.htm';
+$oracle_functions_list_4{'ITERATION_NUMBER'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'ITERATION_NUMBER'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_4{'ITERATION_NUMBER'}{'comments'} = q{};
+$oracle_functions_list_3{'LAST'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions095.htm';
+$oracle_functions_list_3{'LAST'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-window.html';
+$oracle_functions_list_3{'LAST'}{'pginstruction'} = 'last_value';
+$oracle_functions_list_3{'LAST'}{'comments'} = q{};
+$oracle_functions_list_4{'LAST_DAY'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions096.htm';
+$oracle_functions_list_4{'LAST_DAY'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'LAST_DAY'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_4{'LAST_DAY'}{'comments'} = q{The function could be created in such a way: 
+CREATE OR REPLACE FUNCTION public.last_day(date)
+ RETURNS date
+ LANGUAGE sql
+ IMMUTABLE STRICT
+AS $function$
+  SELECT (date_trunc ('MONTH', $1) + INTERVAL '1 MONTH - 1 day') :: date;
+  $function$};
+$oracle_functions_list_3{'LEAST'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions099.htm';
+$oracle_functions_list_3{'LEAST'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-conditional.html';
+$oracle_functions_list_3{'LEAST'}{'pginstruction'} = 'least';
+$oracle_functions_list_3{'LEAST'}{'comments'} = q{Beware of implicit conversions};
+$oracle_functions_list_2{'LENGTH'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions100.htm';
+$oracle_functions_list_2{'LENGTH'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-string.html';
+$oracle_functions_list_2{'LENGTH'}{'pginstruction'} = 'char_length';
+$oracle_functions_list_2{'LENGTH'}{'comments'} = q{Pay attention to LOB types.};
+$oracle_functions_list_4{'LENGTH2'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions100.htm';
+$oracle_functions_list_4{'LENGTH2'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-string.html';
+$oracle_functions_list_4{'LENGTH2'}{'pginstruction'} = 'length';
+$oracle_functions_list_4{'LENGTH2'}{'comments'} = q{The USC2 type is not available on PostgreSQL.};
+$oracle_functions_list_4{'LENGTH4'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions100.htm';
+$oracle_functions_list_4{'LENGTH4'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-string.html';
+$oracle_functions_list_4{'LENGTH4'}{'pginstruction'} = 'length';
+$oracle_functions_list_4{'LENGTH4'}{'comments'} = q{The USC4 type is not available on PostgreSQL.};
+$oracle_functions_list_2{'LENGTHB'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions100.htm';
+$oracle_functions_list_2{'LENGTHB'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-string.html';
+$oracle_functions_list_2{'LENGTHB'}{'pginstruction'} = 'octet_length';
+$oracle_functions_list_2{'LENGTHB'}{'comments'} = q{Function renaming};
+$oracle_functions_list_2{'LENGTHC'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions100.htm';
+$oracle_functions_list_2{'LENGTHC'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-string.html';
+$oracle_functions_list_2{'LENGTHC'}{'pginstruction'} = 'length';
+$oracle_functions_list_2{'LENGTHC'}{'comments'} = q{Function renaming};
+$oracle_functions_list_4{'LEVEL'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/pseudocolumns001.htm';
+$oracle_functions_list_4{'LEVEL'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'LEVEL'}{'pginstruction'} = 'No';
+$oracle_functions_list_4{'LEVEL'}{'comments'} = q{Query needs to be rewritten with a WITH RECURSIVE (https://www.postgresql.org/docs/current/static/queries-with.html).};
+$oracle_functions_list_3{'LISTAGG'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions101.htm';
+$oracle_functions_list_3{'LISTAGG'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-aggregate.html';
+$oracle_functions_list_3{'LISTAGG'}{'pginstruction'} = 'string_agg';
+$oracle_functions_list_3{'LISTAGG'}{'comments'} = q{The PostgreSQL function only uses 2 parameters and does not accept the WITHIN GROUP clause.};
+$oracle_functions_list_1{'LN'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions102.htm';
+$oracle_functions_list_1{'LN'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-math.html';
+$oracle_functions_list_1{'LN'}{'pginstruction'} = 'ln';
+$oracle_functions_list_1{'LN'}{'comments'} = q{Beware of implicit conversions};
+$oracle_functions_list_2{'LNNVL'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions103.htm';
+$oracle_functions_list_2{'LNNVL'}{'pgdocumentation'} = '';
+$oracle_functions_list_2{'LNNVL'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_2{'LNNVL'}{'comments'} = q{};
+$oracle_functions_list_2{'LOCALTIMESTAMP'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions104.htm';
+$oracle_functions_list_2{'LOCALTIMESTAMP'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-datetime.html';
+$oracle_functions_list_2{'LOCALTIMESTAMP'}{'pginstruction'} = 'LOCALTIMESTAMP';
+$oracle_functions_list_2{'LOCALTIMESTAMP'}{'comments'} = q{Pay attention to the timestamp precision.};
+$oracle_functions_list_1{'LOG'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions105.htm';
+$oracle_functions_list_1{'LOG'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-math.html';
+$oracle_functions_list_1{'LOG'}{'pginstruction'} = 'log';
+$oracle_functions_list_1{'LOG'}{'comments'} = q{Direct conversion};
+$oracle_functions_list_1{'LOWER'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions106.htm';
+$oracle_functions_list_1{'LOWER'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-string.html';
+$oracle_functions_list_1{'LOWER'}{'pginstruction'} = 'lower';
+$oracle_functions_list_1{'LOWER'}{'comments'} = q{Direct conversion};
+$oracle_functions_list_2{'LPAD'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions107.htm';
+$oracle_functions_list_2{'LPAD'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-string.html';
+$oracle_functions_list_2{'LPAD'}{'pginstruction'} = 'lpad';
+$oracle_functions_list_2{'LPAD'}{'comments'} = q{Pay attention to LOB types and implicit conversions.};
+$oracle_functions_list_2{'LTRIM'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions108.htm';
+$oracle_functions_list_2{'LTRIM'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-string.html';
+$oracle_functions_list_2{'LTRIM'}{'pginstruction'} = 'ltrim';
+$oracle_functions_list_2{'LTRIM'}{'comments'} = q{Pay attention to LOB types and implicit conversions.};
+$oracle_functions_list_4{'MAKE_REF'}{'sourcedocumentation'} = 'https://docs.oracle.com/database/121/SQLRF/functions109.htm';
+$oracle_functions_list_4{'MAKE_REF'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'MAKE_REF'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_4{'MAKE_REF'}{'comments'} = q{};
+$oracle_functions_list_1{'MAX'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions110.htm';
+$oracle_functions_list_1{'MAX'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/tutorial-agg.html';
+$oracle_functions_list_1{'MAX'}{'pginstruction'} = 'max';
+$oracle_functions_list_1{'MAX'}{'comments'} = q{Beware of implicit conversions. 
+Beware of COUNT(...) OVER expression};
+$oracle_functions_list_4{'MEDIAN'}{'sourcedocumentation'} = 'http://docs.oracle.com/cd/E11882_01/server.112/e41084/functions099.htm';
+$oracle_functions_list_4{'MEDIAN'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'MEDIAN'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_4{'MEDIAN'}{'comments'} = q{One should refer to https://wiki.postgresql.org/wiki/Aggregate_Median and possibly to the quantile extension (https://pgxn.org/dist/quantile/ ).};
+$oracle_functions_list_4{'MERGE'}{'sourcedocumentation'} = 'https://docs.oracle.com/database/121/SQLRF/statements_9017.htm';
+$oracle_functions_list_4{'MERGE'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/sql-insert.html';
+$oracle_functions_list_4{'MERGE'}{'pginstruction'} = 'INSERT ... ON CONFLICT DO NOTHING/UPDATE';
+$oracle_functions_list_4{'MERGE'}{'comments'} = q{};
+$oracle_functions_list_1{'MIN'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions112.htm';
+$oracle_functions_list_1{'MIN'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/tutorial-agg.html';
+$oracle_functions_list_1{'MIN'}{'pginstruction'} = 'min';
+$oracle_functions_list_1{'MIN'}{'comments'} = q{Beware of implicit conversions. 
+Beware of MIN(...) OVER expression};
+$oracle_functions_list_1{'MINUS'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/queries004.htm';
+$oracle_functions_list_1{'MINUS'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/sql-select.html';
+$oracle_functions_list_1{'MINUS'}{'pginstruction'} = 'EXCEPT';
+$oracle_functions_list_1{'MINUS'}{'comments'} = q{};
+$oracle_functions_list_1{'MOD'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions113.htm';
+$oracle_functions_list_1{'MOD'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-math.html';
+$oracle_functions_list_1{'MOD'}{'pginstruction'} = 'mod';
+$oracle_functions_list_1{'MOD'}{'comments'} = q{Beware of implicit conversions};
+$oracle_functions_list_4{'MONTHS_BETWEEN'}{'sourcedocumentation'} = 'http://docs.oracle.com/cd/E11882_01/server.112/e41084/functions102.htm';
+$oracle_functions_list_4{'MONTHS_BETWEEN'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'MONTHS_BETWEEN'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_4{'MONTHS_BETWEEN'}{'comments'} = q{The Oracle function returns a float. If an integer is expected, this code could be used:
+select extract(year from age('02-02-1995'::date, '01-01-1995'::date))*12 + extract(month from age('02-02-1995'::date, '01-01-1995'::date));};
+$oracle_functions_list_3{'NANVL'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions115.htm';
+$oracle_functions_list_3{'NANVL'}{'pgdocumentation'} = '';
+$oracle_functions_list_3{'NANVL'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_3{'NANVL'}{'comments'} = q{Use CASE instead.};
+$oracle_functions_list_4{'NEW_TIME'}{'sourcedocumentation'} = 'http://docs.oracle.com/cd/E11882_01/server.112/e41084/functions105.htm';
+$oracle_functions_list_4{'NEW_TIME'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'NEW_TIME'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_4{'NEW_TIME'}{'comments'} = q{};
+$oracle_functions_list_4{'NEXT_DAY'}{'sourcedocumentation'} = 'http://docs.oracle.com/cd/E11882_01/server.112/e41084/functions106.htm';
+$oracle_functions_list_4{'NEXT_DAY'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'NEXT_DAY'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_4{'NEXT_DAY'}{'comments'} = q{};
+$oracle_functions_list_2{'NEXTVAL'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/pseudocolumns002.htm';
+$oracle_functions_list_2{'NEXTVAL'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-sequence.html';
+$oracle_functions_list_2{'NEXTVAL'}{'pginstruction'} = 'NEXTVAL';
+$oracle_functions_list_2{'NEXTVAL'}{'comments'} = q{The Oracle pseudo-column needs to be translated to a function in PostgreSQL.};
+$oracle_functions_list_4{'NLS_CHARSET_DECL_LEN'}{'sourcedocumentation'} = 'http://docs.oracle.com/cd/E11882_01/server.112/e41084/functions107.htm';
+$oracle_functions_list_4{'NLS_CHARSET_DECL_LEN'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'NLS_CHARSET_DECL_LEN'}{'pginstruction'} = '';
+$oracle_functions_list_4{'NLS_CHARSET_DECL_LEN'}{'comments'} = q{};
+$oracle_functions_list_4{'NLS_CHARSET_ID'}{'sourcedocumentation'} = 'http://docs.oracle.com/cd/E11882_01/server.112/e41084/functions108.htm';
+$oracle_functions_list_4{'NLS_CHARSET_ID'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'NLS_CHARSET_ID'}{'pginstruction'} = '';
+$oracle_functions_list_4{'NLS_CHARSET_ID'}{'comments'} = q{};
+$oracle_functions_list_4{'NLS_CHARSET_NAME'}{'sourcedocumentation'} = 'http://docs.oracle.com/cd/E11882_01/server.112/e41084/functions109.htm';
+$oracle_functions_list_4{'NLS_CHARSET_NAME'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'NLS_CHARSET_NAME'}{'pginstruction'} = '';
+$oracle_functions_list_4{'NLS_CHARSET_NAME'}{'comments'} = q{};
+$oracle_functions_list_4{'NLS_INITCAP'}{'sourcedocumentation'} = 'http://docs.oracle.com/cd/E11882_01/server.112/e41084/functions110.htm';
+$oracle_functions_list_4{'NLS_INITCAP'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'NLS_INITCAP'}{'pginstruction'} = '';
+$oracle_functions_list_4{'NLS_INITCAP'}{'comments'} = q{};
+$oracle_functions_list_4{'NLS_LOWER'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions123.htm';
+$oracle_functions_list_4{'NLS_LOWER'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'NLS_LOWER'}{'pginstruction'} = '';
+$oracle_functions_list_4{'NLS_LOWER'}{'comments'} = q{};
+$oracle_functions_list_4{'NLS_UPPER'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions124.htm';
+$oracle_functions_list_4{'NLS_UPPER'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'NLS_UPPER'}{'pginstruction'} = '';
+$oracle_functions_list_4{'NLS_UPPER'}{'comments'} = q{};
+$oracle_functions_list_4{'NLSSORT'}{'sourcedocumentation'} = 'http://docs.oracle.com/cd/E11882_01/server.112/e41084/functions113.htm';
+$oracle_functions_list_4{'NLSSORT'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'NLSSORT'}{'pginstruction'} = '';
+$oracle_functions_list_4{'NLSSORT'}{'comments'} = q{};
+$oracle_functions_list_2{'NULLIF'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions128.htm';
+$oracle_functions_list_2{'NULLIF'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-conditional.html';
+$oracle_functions_list_2{'NULLIF'}{'pginstruction'} = 'NULLIF';
+$oracle_functions_list_2{'NULLIF'}{'comments'} = q{Beware of implicit conversions.};
+$oracle_functions_list_4{'NUMTODSINTERVAL'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions129.htm';
+$oracle_functions_list_4{'NUMTODSINTERVAL'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'NUMTODSINTERVAL'}{'pginstruction'} = '';
+$oracle_functions_list_4{'NUMTODSINTERVAL'}{'comments'} = q{};
+$oracle_functions_list_4{'NUMTOYMINTERVAL'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions130.htm';
+$oracle_functions_list_4{'NUMTOYMINTERVAL'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'NUMTOYMINTERVAL'}{'pginstruction'} = '';
+$oracle_functions_list_4{'NUMTOYMINTERVAL'}{'comments'} = q{};
+$oracle_functions_list_2{'NVL'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions131.htm';
+$oracle_functions_list_2{'NVL'}{'pgdocumentation'} = '';
+$oracle_functions_list_2{'NVL'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_2{'NVL'}{'comments'} = q{Use the SQL standard SQL COALESCE.};
+$oracle_functions_list_3{'NVL2'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions132.htm';
+$oracle_functions_list_3{'NVL2'}{'pgdocumentation'} = '';
+$oracle_functions_list_3{'NVL2'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_3{'NVL2'}{'comments'} = q{Use CASE instead.};
+$oracle_functions_list_4{'ORA_HASH'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions136.htm';
+$oracle_functions_list_4{'ORA_HASH'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'ORA_HASH'}{'pginstruction'} = '';
+$oracle_functions_list_4{'ORA_HASH'}{'comments'} = q{};
+$oracle_functions_list_4{'PATH'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions139.htm';
+$oracle_functions_list_4{'PATH'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'PATH'}{'pginstruction'} = '';
+$oracle_functions_list_4{'PATH'}{'comments'} = q{};
+$oracle_functions_list_3{'PERCENT_RANK'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions140.htm';
+$oracle_functions_list_3{'PERCENT_RANK'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-window.html';
+$oracle_functions_list_3{'PERCENT_RANK'}{'pginstruction'} = 'percent_rank';
+$oracle_functions_list_3{'PERCENT_RANK'}{'comments'} = q{The Postgresql function does support the WITHIN GROUP clause. Needs a similar rewriting as dense_rank.};
+$oracle_functions_list_4{'PERCENTILE_CONT'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions141.htm';
+$oracle_functions_list_4{'PERCENTILE_CONT'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'PERCENTILE_CONT'}{'pginstruction'} = '';
+$oracle_functions_list_4{'PERCENTILE_CONT'}{'comments'} = q{};
+$oracle_functions_list_4{'PERCENTILE_DISC'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions142.htm';
+$oracle_functions_list_4{'PERCENTILE_DISC'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'PERCENTILE_DISC'}{'pginstruction'} = '';
+$oracle_functions_list_4{'PERCENTILE_DISC'}{'comments'} = q{};
+$oracle_functions_list_1{'POWER'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions143.htm';
+$oracle_functions_list_1{'POWER'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-math.html';
+$oracle_functions_list_1{'POWER'}{'pginstruction'} = 'power';
+$oracle_functions_list_1{'POWER'}{'comments'} = q{Direct conversion};
+$oracle_functions_list_4{'POWERMULTISET'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions144.htm';
+$oracle_functions_list_4{'POWERMULTISET'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'POWERMULTISET'}{'pginstruction'} = '';
+$oracle_functions_list_4{'POWERMULTISET'}{'comments'} = q{};
+$oracle_functions_list_4{'POWERMULTISET_BY_CARDINALITY'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions145.htm';
+$oracle_functions_list_4{'POWERMULTISET_BY_CARDINALITY'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'POWERMULTISET_BY_CARDINALITY'}{'pginstruction'} = '';
+$oracle_functions_list_4{'POWERMULTISET_BY_CARDINALITY'}{'comments'} = q{};
+$oracle_functions_list_4{'PREDICTION'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions146.htm';
+$oracle_functions_list_4{'PREDICTION'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'PREDICTION'}{'pginstruction'} = '';
+$oracle_functions_list_4{'PREDICTION'}{'comments'} = q{};
+$oracle_functions_list_4{'PREDICTION_COST'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions148.htm';
+$oracle_functions_list_4{'PREDICTION_COST'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'PREDICTION_COST'}{'pginstruction'} = '';
+$oracle_functions_list_4{'PREDICTION_COST'}{'comments'} = q{};
+$oracle_functions_list_4{'PREDICTION_DETAILS'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions149.htm';
+$oracle_functions_list_4{'PREDICTION_DETAILS'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'PREDICTION_DETAILS'}{'pginstruction'} = '';
+$oracle_functions_list_4{'PREDICTION_DETAILS'}{'comments'} = q{};
+$oracle_functions_list_4{'PREDICTION_PROBABILITY'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions150.htm';
+$oracle_functions_list_4{'PREDICTION_PROBABILITY'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'PREDICTION_PROBABILITY'}{'pginstruction'} = '';
+$oracle_functions_list_4{'PREDICTION_PROBABILITY'}{'comments'} = q{};
+$oracle_functions_list_4{'PREDICTION_SET'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions151.htm';
+$oracle_functions_list_4{'PREDICTION_SET'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'PREDICTION_SET'}{'pginstruction'} = '';
+$oracle_functions_list_4{'PREDICTION_SET'}{'comments'} = q{};
+$oracle_functions_list_4{'PRESENTNNV'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions152.htm';
+$oracle_functions_list_4{'PRESENTNNV'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'PRESENTNNV'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_4{'PRESENTNNV'}{'comments'} = q{};
+$oracle_functions_list_4{'PRESENTV'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions153.htm';
+$oracle_functions_list_4{'PRESENTV'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'PRESENTV'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_4{'PRESENTV'}{'comments'} = q{};
+$oracle_functions_list_4{'PREVIOUS'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions154.htm';
+$oracle_functions_list_4{'PREVIOUS'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'PREVIOUS'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_4{'PREVIOUS'}{'comments'} = q{};
+$oracle_functions_list_3{'RANK'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions155.htm';
+$oracle_functions_list_3{'RANK'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-window.html';
+$oracle_functions_list_3{'RANK'}{'pginstruction'} = 'rank';
+$oracle_functions_list_3{'RANK'}{'comments'} = q{The Postgresql function does support the WITHIN GROUP clause. Needs a similar rewriting as dense_rank.};
+$oracle_functions_list_4{'RAWTOHEX'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions157.htm';
+$oracle_functions_list_4{'RAWTOHEX'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'RAWTOHEX'}{'pginstruction'} = '';
+$oracle_functions_list_4{'RAWTOHEX'}{'comments'} = q{};
+$oracle_functions_list_4{'RAWTONHEX'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions158.htm';
+$oracle_functions_list_4{'RAWTONHEX'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'RAWTONHEX'}{'pginstruction'} = '';
+$oracle_functions_list_4{'RAWTONHEX'}{'comments'} = q{};
+$oracle_functions_list_4{'REF'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions159.htm';
+$oracle_functions_list_4{'REF'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'REF'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_4{'REF'}{'comments'} = q{};
+$oracle_functions_list_4{'REFTOHEX'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions160.htm';
+$oracle_functions_list_4{'REFTOHEX'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'REFTOHEX'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_4{'REFTOHEX'}{'comments'} = q{};
+$oracle_functions_list_4{'REGEXP_INSTR'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions162.htm';
+$oracle_functions_list_4{'REGEXP_INSTR'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'REGEXP_INSTR'}{'pginstruction'} = '';
+$oracle_functions_list_4{'REGEXP_INSTR'}{'comments'} = q{};
+$oracle_functions_list_4{'REGEXP_REPLACE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions163.htm';
+$oracle_functions_list_4{'REGEXP_REPLACE'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-string.html';
+$oracle_functions_list_4{'REGEXP_REPLACE'}{'pginstruction'} = 'regexp_replace';
+$oracle_functions_list_4{'REGEXP_REPLACE'}{'comments'} = q{The PostgreSQL function does not handle the position, occurrence and match_parameter parameters. A flag can also be set.};
+$oracle_functions_list_4{'REGEXP_SUBSTR'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions164.htm';
+$oracle_functions_list_4{'REGEXP_SUBSTR'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-string.html';
+$oracle_functions_list_4{'REGEXP_SUBSTR'}{'pginstruction'} = 'substring';
+$oracle_functions_list_4{'REGEXP_SUBSTR'}{'comments'} = q{The PostgreSQL function can be used only with the source and pattern parameters.};
+$oracle_functions_list_3{'REGR_AVGX'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions165.htm';
+$oracle_functions_list_3{'REGR_AVGX'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-aggregate.html';
+$oracle_functions_list_3{'REGR_AVGX'}{'pginstruction'} = 'regr_avgx';
+$oracle_functions_list_3{'REGR_AVGX'}{'comments'} = q{Beware of implicit conversions};
+$oracle_functions_list_3{'REGR_AVGY'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions165.htm';
+$oracle_functions_list_3{'REGR_AVGY'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-aggregate.html';
+$oracle_functions_list_3{'REGR_AVGY'}{'pginstruction'} = 'regr_avgy';
+$oracle_functions_list_3{'REGR_AVGY'}{'comments'} = q{Beware of implicit conversions};
+$oracle_functions_list_3{'REGR_COUNT'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions165.htm';
+$oracle_functions_list_3{'REGR_COUNT'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-aggregate.html';
+$oracle_functions_list_3{'REGR_COUNT'}{'pginstruction'} = 'regr_count';
+$oracle_functions_list_3{'REGR_COUNT'}{'comments'} = q{Beware of implicit conversions};
+$oracle_functions_list_3{'REGR_INTERCEPT'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions165.htm';
+$oracle_functions_list_3{'REGR_INTERCEPT'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-aggregate.html';
+$oracle_functions_list_3{'REGR_INTERCEPT'}{'pginstruction'} = 'regr_intercept';
+$oracle_functions_list_3{'REGR_INTERCEPT'}{'comments'} = q{Beware of implicit conversions};
+$oracle_functions_list_3{'REGR_R2'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions165.htm';
+$oracle_functions_list_3{'REGR_R2'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-aggregate.html';
+$oracle_functions_list_3{'REGR_R2'}{'pginstruction'} = 'regr_r2';
+$oracle_functions_list_3{'REGR_R2'}{'comments'} = q{Beware of implicit conversions};
+$oracle_functions_list_3{'REGR_SLOPE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions165.htm';
+$oracle_functions_list_3{'REGR_SLOPE'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-aggregate.html';
+$oracle_functions_list_3{'REGR_SLOPE'}{'pginstruction'} = 'regr_slope';
+$oracle_functions_list_3{'REGR_SLOPE'}{'comments'} = q{Beware of implicit conversions};
+$oracle_functions_list_3{'REGR_SXX'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions165.htm';
+$oracle_functions_list_3{'REGR_SXX'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-aggregate.html';
+$oracle_functions_list_3{'REGR_SXX'}{'pginstruction'} = 'regr_sxx';
+$oracle_functions_list_3{'REGR_SXX'}{'comments'} = q{Beware of implicit conversions};
+$oracle_functions_list_3{'REGR_SXY'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions165.htm';
+$oracle_functions_list_3{'REGR_SXY'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-aggregate.html';
+$oracle_functions_list_3{'REGR_SXY'}{'pginstruction'} = 'regr_sxy';
+$oracle_functions_list_3{'REGR_SXY'}{'comments'} = q{Beware of implicit conversions};
+$oracle_functions_list_3{'REGR_SYY'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions165.htm';
+$oracle_functions_list_3{'REGR_SYY'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-aggregate.html';
+$oracle_functions_list_3{'REGR_SYY'}{'pginstruction'} = 'regr_syy';
+$oracle_functions_list_3{'REGR_SYY'}{'comments'} = q{Beware of implicit conversions};
+$oracle_functions_list_2{'REMAINDER'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions166.htm';
+$oracle_functions_list_2{'REMAINDER'}{'pgdocumentation'} = '';
+$oracle_functions_list_2{'REMAINDER'}{'pginstruction'} = '';
+$oracle_functions_list_2{'REMAINDER'}{'comments'} = q{};
+$oracle_functions_list_2{'REPLACE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions167.htm';
+$oracle_functions_list_2{'REPLACE'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-string.html';
+$oracle_functions_list_2{'REPLACE'}{'pginstruction'} = 'replace';
+$oracle_functions_list_2{'REPLACE'}{'comments'} = q{The 3rd parameter is optional in Oracle but mandatory in PostgreSQL.};
+$oracle_functions_list_2{'ROLLBACK'}{'sourcedocumentation'} = 'https://docs.oracle.com/cd/B19306_01/server.102/b14200/statements_9021.htm';
+$oracle_functions_list_2{'ROLLBACK'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/sql-rollback.html';
+$oracle_functions_list_2{'ROLLBACK'}{'pginstruction'} = 'ROLLBACK';
+$oracle_functions_list_2{'ROLLBACK'}{'comments'} = q{PostgreSQL does not support the FORCE clause.};
+$oracle_functions_list_1{'ROUND'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions169.htm';
+$oracle_functions_list_1{'ROUND'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-math.html';
+$oracle_functions_list_1{'ROUND'}{'pginstruction'} = 'round';
+$oracle_functions_list_1{'ROUND'}{'comments'} = q{The PostgreSQL function cannot be applied on a DATE type.};
+$oracle_functions_list_3{'ROUND'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions169.htm';
+$oracle_functions_list_3{'ROUND'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-math.html';
+$oracle_functions_list_3{'ROUND'}{'pginstruction'} = 'round';
+$oracle_functions_list_3{'ROUND'}{'comments'} = q{The PostgreSQL cannot be used with the number and date types.};
+$oracle_functions_list_3{'ROWID'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/pseudocolumns008.htm';
+$oracle_functions_list_3{'ROWID'}{'pgdocumentation'} = '';
+$oracle_functions_list_3{'ROWID'}{'pginstruction'} = 'oid, ctid';
+$oracle_functions_list_3{'ROWID'}{'comments'} = q{A row can be identied with the ctid (hidden) column. An oid column will be available if the table was created with the following rules: https://www.postgresql.org/docs/current/static/runtime-config-compatible.html#GUC-DEFAULT-WITH-OIDS. };
+$oracle_functions_list_4{'ROWIDTOCHAR'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions171.htm';
+$oracle_functions_list_4{'ROWIDTOCHAR'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'ROWIDTOCHAR'}{'pginstruction'} = '';
+$oracle_functions_list_4{'ROWIDTOCHAR'}{'comments'} = q{};
+$oracle_functions_list_4{'ROWIDTONCHAR'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions172.htm';
+$oracle_functions_list_4{'ROWIDTONCHAR'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'ROWIDTONCHAR'}{'pginstruction'} = '';
+$oracle_functions_list_4{'ROWIDTONCHAR'}{'comments'} = q{};
+$oracle_functions_list_3{'ROWNUM'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/pseudocolumns009.htm';
+$oracle_functions_list_3{'ROWNUM'}{'pgdocumentation'} = '';
+$oracle_functions_list_3{'ROWNUM'}{'pginstruction'} = 'limit or windowing functions or generate_series';
+$oracle_functions_list_3{'ROWNUM'}{'comments'} = q{Beware of the ORDER BY clause. One should use a windowing function if the goal is to enumarate lines.};
+$oracle_functions_list_2{'RPAD'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions173.htm';
+$oracle_functions_list_2{'RPAD'}{'pgdocumentation'} = '';
+$oracle_functions_list_2{'RPAD'}{'pginstruction'} = '';
+$oracle_functions_list_2{'RPAD'}{'comments'} = q{Pay attention to LOB types and implicit conversions.};
+$oracle_functions_list_2{'RTRIM'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions174.htm';
+$oracle_functions_list_2{'RTRIM'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-string.html';
+$oracle_functions_list_2{'RTRIM'}{'pginstruction'} = 'rtrim';
+$oracle_functions_list_2{'RTRIM'}{'comments'} = q{Pay attention to LOB types and implicit conversions.};
+$oracle_functions_list_4{'SCN_TO_TIMESTAMP'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions175.htm';
+$oracle_functions_list_4{'SCN_TO_TIMESTAMP'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'SCN_TO_TIMESTAMP'}{'pginstruction'} = '';
+$oracle_functions_list_4{'SCN_TO_TIMESTAMP'}{'comments'} = q{};
+$oracle_functions_list_3{'SEQUENCE'}{'sourcedocumentation'} = '';
+$oracle_functions_list_3{'SEQUENCE'}{'pgdocumentation'} = '';
+$oracle_functions_list_3{'SEQUENCE'}{'pginstruction'} = '';
+$oracle_functions_list_3{'SEQUENCE'}{'comments'} = q{};
+$oracle_functions_list_4{'SESSIONTIMEZONE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions176.htm';
+$oracle_functions_list_4{'SESSIONTIMEZONE'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'SESSIONTIMEZONE'}{'pginstruction'} = '';
+$oracle_functions_list_4{'SESSIONTIMEZONE'}{'comments'} = q{};
+$oracle_functions_list_4{'SET'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions177.htm';
+$oracle_functions_list_4{'SET'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'SET'}{'pginstruction'} = '';
+$oracle_functions_list_4{'SET'}{'comments'} = q{};
+$oracle_functions_list_1{'SIGN'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions178.htm';
+$oracle_functions_list_1{'SIGN'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-math.html';
+$oracle_functions_list_1{'SIGN'}{'pginstruction'} = 'sign';
+$oracle_functions_list_1{'SIGN'}{'comments'} = q{Beware of implicit conversions};
+$oracle_functions_list_1{'SIN'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions179.htm';
+$oracle_functions_list_1{'SIN'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-math.html';
+$oracle_functions_list_1{'SIN'}{'pginstruction'} = 'sin';
+$oracle_functions_list_1{'SIN'}{'comments'} = q{Beware of implicit conversions};
+$oracle_functions_list_3{'SINH'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions180.htm';
+$oracle_functions_list_3{'SINH'}{'pgdocumentation'} = '';
+$oracle_functions_list_3{'SINH'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_3{'SINH'}{'comments'} = q{A function can be created if necessary.};
+$oracle_functions_list_3{'SOUNDEX'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions181.htm';
+$oracle_functions_list_3{'SOUNDEX'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/fuzzystrmatch.html';
+$oracle_functions_list_3{'SOUNDEX'}{'pginstruction'} = 'soundex';
+$oracle_functions_list_3{'SOUNDEX'}{'comments'} = q{The fuzzystrmatch extension needs to be installed to use soundex.};
+$oracle_functions_list_1{'SQRT'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions182.htm';
+$oracle_functions_list_1{'SQRT'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-math.html';
+$oracle_functions_list_1{'SQRT'}{'pginstruction'} = 'sqrt';
+$oracle_functions_list_1{'SQRT'}{'comments'} = q{Direct conversion};
+$oracle_functions_list_4{'STATS_BINOMIAL_TEST'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions184.htm';
+$oracle_functions_list_4{'STATS_BINOMIAL_TEST'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'STATS_BINOMIAL_TEST'}{'pginstruction'} = '';
+$oracle_functions_list_4{'STATS_BINOMIAL_TEST'}{'comments'} = q{};
+$oracle_functions_list_4{'STATS_CROSSTAB'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions185.htm';
+$oracle_functions_list_4{'STATS_CROSSTAB'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'STATS_CROSSTAB'}{'pginstruction'} = '';
+$oracle_functions_list_4{'STATS_CROSSTAB'}{'comments'} = q{};
+$oracle_functions_list_4{'STATS_F_TEST'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions186.htm';
+$oracle_functions_list_4{'STATS_F_TEST'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'STATS_F_TEST'}{'pginstruction'} = '';
+$oracle_functions_list_4{'STATS_F_TEST'}{'comments'} = q{};
+$oracle_functions_list_4{'STATS_KS_TEST'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions187.htm';
+$oracle_functions_list_4{'STATS_KS_TEST'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'STATS_KS_TEST'}{'pginstruction'} = '';
+$oracle_functions_list_4{'STATS_KS_TEST'}{'comments'} = q{};
+$oracle_functions_list_4{'STATS_MODE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions188.htm';
+$oracle_functions_list_4{'STATS_MODE'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'STATS_MODE'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_4{'STATS_MODE'}{'comments'} = q{Use windowing functions. The code besides should be checked more thoroughly.};
+$oracle_functions_list_4{'STATS_MW_TEST'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions189.htm';
+$oracle_functions_list_4{'STATS_MW_TEST'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'STATS_MW_TEST'}{'pginstruction'} = '';
+$oracle_functions_list_4{'STATS_MW_TEST'}{'comments'} = q{};
+$oracle_functions_list_4{'STATS_ONE_WAY_ANOVA'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions190.htm';
+$oracle_functions_list_4{'STATS_ONE_WAY_ANOVA'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'STATS_ONE_WAY_ANOVA'}{'pginstruction'} = '';
+$oracle_functions_list_4{'STATS_ONE_WAY_ANOVA'}{'comments'} = q{};
+$oracle_functions_list_4{'STATS_T_TEST_'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions191.htm';
+$oracle_functions_list_4{'STATS_T_TEST_'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'STATS_T_TEST_'}{'pginstruction'} = '';
+$oracle_functions_list_4{'STATS_T_TEST_'}{'comments'} = q{};
+$oracle_functions_list_4{'STATS_WSR_TEST'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions192.htm';
+$oracle_functions_list_4{'STATS_WSR_TEST'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'STATS_WSR_TEST'}{'pginstruction'} = '';
+$oracle_functions_list_4{'STATS_WSR_TEST'}{'comments'} = q{};
+$oracle_functions_list_2{'STDDEV'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions193.htm';
+$oracle_functions_list_2{'STDDEV'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-aggregate.html';
+$oracle_functions_list_2{'STDDEV'}{'pginstruction'} = 'stddev';
+$oracle_functions_list_2{'STDDEV'}{'comments'} = q{PostgreSQL does not support the DISTINCT clause (STTDEV (DISTINCT expr)).};
+$oracle_functions_list_2{'STDDEV_POP'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions194.htm';
+$oracle_functions_list_2{'STDDEV_POP'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-aggregate.html';
+$oracle_functions_list_2{'STDDEV_POP'}{'pginstruction'} = 'stddev_pop';
+$oracle_functions_list_2{'STDDEV_POP'}{'comments'} = q{Beware of implicit conversions.};
+$oracle_functions_list_2{'STDDEV_SAMP'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions195.htm';
+$oracle_functions_list_2{'STDDEV_SAMP'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-aggregate.html';
+$oracle_functions_list_2{'STDDEV_SAMP'}{'pginstruction'} = 'stddev_samp';
+$oracle_functions_list_2{'STDDEV_SAMP'}{'comments'} = q{Beware of implicit conversions.};
+$oracle_functions_list_2{'SUBSTR'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions196.htm';
+$oracle_functions_list_2{'SUBSTR'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-string.html';
+$oracle_functions_list_2{'SUBSTR'}{'pginstruction'} = 'substr';
+$oracle_functions_list_2{'SUBSTR'}{'comments'} = q{Will work on PostgreSQL with the varchar, char and text types. Contrary to Oracle, SELECT SUBSTR('ABCDEFG',-5,4) "Substring" will give an empty string.};
+$oracle_functions_list_2{'SUM'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions197.htm';
+$oracle_functions_list_2{'SUM'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-aggregate.html';
+$oracle_functions_list_2{'SUM'}{'pginstruction'} = 'sum';
+$oracle_functions_list_2{'SUM'}{'comments'} = q{Beware of implicit conversions.};
+$oracle_functions_list_4{'SYNONYM'}{'sourcedocumentation'} = '';
+$oracle_functions_list_4{'SYNONYM'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'SYNONYM'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_4{'SYNONYM'}{'comments'} = q{};
+$oracle_functions_list_4{'SYS_CONNECT_BY_PATH'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions198.htm';
+$oracle_functions_list_4{'SYS_CONNECT_BY_PATH'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'SYS_CONNECT_BY_PATH'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_4{'SYS_CONNECT_BY_PATH'}{'comments'} = q{Needs to be rewritten with a WITH RECURSIVE (https://www.postgresql.org/docs/current/static/queries-with.html)};
+$oracle_functions_list_4{'SYS_CONTEXT'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions199.htm';
+$oracle_functions_list_4{'SYS_CONTEXT'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'SYS_CONTEXT'}{'pginstruction'} = '';
+$oracle_functions_list_4{'SYS_CONTEXT'}{'comments'} = q{};
+$oracle_functions_list_4{'SYS_DBURIGEN'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions200.htm';
+$oracle_functions_list_4{'SYS_DBURIGEN'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'SYS_DBURIGEN'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_4{'SYS_DBURIGEN'}{'comments'} = q{};
+$oracle_functions_list_4{'SYS_EXTRACT_UTC'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions201.htm';
+$oracle_functions_list_4{'SYS_EXTRACT_UTC'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'SYS_EXTRACT_UTC'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_4{'SYS_EXTRACT_UTC'}{'comments'} = q{};
+$oracle_functions_list_4{'SYS_GUID'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions202.htm';
+$oracle_functions_list_4{'SYS_GUID'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'SYS_GUID'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_4{'SYS_GUID'}{'comments'} = q{};
+$oracle_functions_list_4{'SYS_TYPEID'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions204.htm';
+$oracle_functions_list_4{'SYS_TYPEID'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'SYS_TYPEID'}{'pginstruction'} = '';
+$oracle_functions_list_4{'SYS_TYPEID'}{'comments'} = q{};
+$oracle_functions_list_4{'SYS_XMLAGG'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions205.htm';
+$oracle_functions_list_4{'SYS_XMLAGG'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'SYS_XMLAGG'}{'pginstruction'} = '';
+$oracle_functions_list_4{'SYS_XMLAGG'}{'comments'} = q{};
+$oracle_functions_list_4{'SYS_XMLGEN'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions206.htm';
+$oracle_functions_list_4{'SYS_XMLGEN'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'SYS_XMLGEN'}{'pginstruction'} = '';
+$oracle_functions_list_4{'SYS_XMLGEN'}{'comments'} = q{};
+$oracle_functions_list_2{'SYSDATE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions207.htm';
+$oracle_functions_list_2{'SYSDATE'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-datetime.html';
+$oracle_functions_list_2{'SYSDATE'}{'pginstruction'} = 'localtimestamp';
+$oracle_functions_list_2{'SYSDATE'}{'comments'} = q{Check NLS_DATE_FORMAT.};
+$oracle_functions_list_1{'SYSTIMESTAMP'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions208.htm';
+$oracle_functions_list_1{'SYSTIMESTAMP'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-datetime.html';
+$oracle_functions_list_1{'SYSTIMESTAMP'}{'pginstruction'} = 'current_timestamp';
+$oracle_functions_list_1{'SYSTIMESTAMP'}{'comments'} = q{};
+$oracle_functions_list_1{'TAN'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions209.htm';
+$oracle_functions_list_1{'TAN'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-math.html';
+$oracle_functions_list_1{'TAN'}{'pginstruction'} = 'tan';
+$oracle_functions_list_1{'TAN'}{'comments'} = q{Beware of implicit conversions};
+$oracle_functions_list_3{'TANH'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions210.htm';
+$oracle_functions_list_3{'TANH'}{'pgdocumentation'} = '';
+$oracle_functions_list_3{'TANH'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_3{'TANH'}{'comments'} = q{A function can be created if necessary.};
+$oracle_functions_list_4{'TIMESTAMP_TO_SCN'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions211.htm';
+$oracle_functions_list_4{'TIMESTAMP_TO_SCN'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'TIMESTAMP_TO_SCN'}{'pginstruction'} = '';
+$oracle_functions_list_4{'TIMESTAMP_TO_SCN'}{'comments'} = q{};
+$oracle_functions_list_4{'TO_BINARY_DOUBLE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions212.htm';
+$oracle_functions_list_4{'TO_BINARY_DOUBLE'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'TO_BINARY_DOUBLE'}{'pginstruction'} = '';
+$oracle_functions_list_4{'TO_BINARY_DOUBLE'}{'comments'} = q{};
+$oracle_functions_list_2{'TO_BINARY_FLOAT'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions213.htm';
+$oracle_functions_list_2{'TO_BINARY_FLOAT'}{'pgdocumentation'} = '';
+$oracle_functions_list_2{'TO_BINARY_FLOAT'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_2{'TO_BINARY_FLOAT'}{'comments'} = q{};
+$oracle_functions_list_3{'TO_CHAR'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions216.htm';
+$oracle_functions_list_3{'TO_CHAR'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-formatting.html';
+$oracle_functions_list_3{'TO_CHAR'}{'pginstruction'} = 'to_char';
+$oracle_functions_list_3{'TO_CHAR'}{'comments'} = q{TO_CHAR can be used with datetime, number and character types. The PostgreSQL equivalent cannot be used with a Large Object.};
+$oracle_functions_list_4{'TO_CLOB'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions218.htm';
+$oracle_functions_list_4{'TO_CLOB'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'TO_CLOB'}{'pginstruction'} = '';
+$oracle_functions_list_4{'TO_CLOB'}{'comments'} = q{};
+$oracle_functions_list_2{'TO_DATE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions219.htm';
+$oracle_functions_list_2{'TO_DATE'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-formatting.html';
+$oracle_functions_list_2{'TO_DATE'}{'pginstruction'} = 'to_date';
+$oracle_functions_list_2{'TO_DATE'}{'comments'} = q{The PostgreSQL function does not handle the fmt and nlsparam parameters.};
+$oracle_functions_list_4{'TO_DSINTERVAL'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions220.htm';
+$oracle_functions_list_4{'TO_DSINTERVAL'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'TO_DSINTERVAL'}{'pginstruction'} = '';
+$oracle_functions_list_4{'TO_DSINTERVAL'}{'comments'} = q{};
+$oracle_functions_list_4{'TO_LOB'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions221.htm';
+$oracle_functions_list_4{'TO_LOB'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'TO_LOB'}{'pginstruction'} = '';
+$oracle_functions_list_4{'TO_LOB'}{'comments'} = q{};
+$oracle_functions_list_4{'TO_MULTI_BYTE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions222.htm';
+$oracle_functions_list_4{'TO_MULTI_BYTE'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'TO_MULTI_BYTE'}{'pginstruction'} = '';
+$oracle_functions_list_4{'TO_MULTI_BYTE'}{'comments'} = q{};
+$oracle_functions_list_4{'TO_NCHAR'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions225.htm';
+$oracle_functions_list_4{'TO_NCHAR'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-formatting.html';
+$oracle_functions_list_4{'TO_NCHAR'}{'pginstruction'} = 'to_char';
+$oracle_functions_list_4{'TO_NCHAR'}{'comments'} = q{TO_NCHAR can be used on number, datetime, character types. Once converted, the PostgreSQL to_char function could be used if the fmt and nlsparam parameters are not needed.};
+$oracle_functions_list_4{'TO_NCLOB'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions226.htm';
+$oracle_functions_list_4{'TO_NCLOB'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'TO_NCLOB'}{'pginstruction'} = '';
+$oracle_functions_list_4{'TO_NCLOB'}{'comments'} = q{};
+$oracle_functions_list_2{'TO_NUMBER'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions227.htm';
+$oracle_functions_list_2{'TO_NUMBER'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-formatting.html';
+$oracle_functions_list_2{'TO_NUMBER'}{'pginstruction'} = 'to_number';
+$oracle_functions_list_2{'TO_NUMBER'}{'comments'} = q{The PostgreSQL function does not handle the fmt and nlsparam parameters.};
+$oracle_functions_list_4{'TO_SINGLE_BYTE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions228.htm';
+$oracle_functions_list_4{'TO_SINGLE_BYTE'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'TO_SINGLE_BYTE'}{'pginstruction'} = '';
+$oracle_functions_list_4{'TO_SINGLE_BYTE'}{'comments'} = q{};
+$oracle_functions_list_2{'TO_TIMESTAMP'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/122/SQLRF/TO_TIMESTAMP.htm';
+$oracle_functions_list_2{'TO_TIMESTAMP'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-formatting.html';
+$oracle_functions_list_2{'TO_TIMESTAMP'}{'pginstruction'} = 'to_timestamp';
+$oracle_functions_list_2{'TO_TIMESTAMP'}{'comments'} = q{The PostgreSQL function does not handle the fmt and nlsparam parameters. Beware of implicit conversions.};
+$oracle_functions_list_2{'TO_TIMESTAMP_TZ'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions230.htm';
+$oracle_functions_list_2{'TO_TIMESTAMP_TZ'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-formatting.html';
+$oracle_functions_list_2{'TO_TIMESTAMP_TZ'}{'pginstruction'} = 'to_timestamp';
+$oracle_functions_list_2{'TO_TIMESTAMP_TZ'}{'comments'} = q{The PostgreSQL function does not handle the fmt and nlsparam parameters. Beware of implicit conversions.};
+$oracle_functions_list_4{'TO_YMINTERVAL'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions231.htm';
+$oracle_functions_list_4{'TO_YMINTERVAL'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'TO_YMINTERVAL'}{'pginstruction'} = '';
+$oracle_functions_list_4{'TO_YMINTERVAL'}{'comments'} = q{};
+$oracle_functions_list_2{'TRANSLATE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions232.htm';
+$oracle_functions_list_2{'TRANSLATE'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-string.html';
+$oracle_functions_list_2{'TRANSLATE'}{'pginstruction'} = 'translate';
+$oracle_functions_list_2{'TRANSLATE'}{'comments'} = q{Will work on PostgreSQL with the varchar, char and text types.};
+$oracle_functions_list_4{'TREAT'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions234.htm';
+$oracle_functions_list_4{'TREAT'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'TREAT'}{'pginstruction'} = '';
+$oracle_functions_list_4{'TREAT'}{'comments'} = q{};
+$oracle_functions_list_2{'TRIM'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions235.htm';
+$oracle_functions_list_2{'TRIM'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-string.html';
+$oracle_functions_list_2{'TRIM'}{'pginstruction'} = 'trim';
+$oracle_functions_list_2{'TRIM'}{'comments'} = q{Pay attention to LOB types and implicit conversions.};
+$oracle_functions_list_2{'TRUNC'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions237.htm';
+$oracle_functions_list_2{'TRUNC'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-math.html';
+$oracle_functions_list_2{'TRUNC'}{'pginstruction'} = 'trunc';
+$oracle_functions_list_2{'TRUNC'}{'comments'} = q{It is possible to use TRUNC on number and date types. Be careful, an Oracle TRUNC on a date will be a date_trunc on PostgreSQL. This function will return a timestamp (and not a date).};
+$oracle_functions_list_3{'TZ_OFFSET'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions238.htm';
+$oracle_functions_list_3{'TZ_OFFSET'}{'pgdocumentation'} = '';
+$oracle_functions_list_3{'TZ_OFFSET'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_3{'TZ_OFFSET'}{'comments'} = q{Needs to be adapted if the Oracle function uses the SESSIONTIMEZONE or DBTIMEZON parameter.};
+$oracle_functions_list_4{'UID'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions239.htm';
+$oracle_functions_list_4{'UID'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'UID'}{'pginstruction'} = '';
+$oracle_functions_list_4{'UID'}{'comments'} = q{};
+$oracle_functions_list_4{'UNISTR'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions240.htm';
+$oracle_functions_list_4{'UNISTR'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'UNISTR'}{'pginstruction'} = '';
+$oracle_functions_list_4{'UNISTR'}{'comments'} = q{};
+$oracle_functions_list_4{'UPDATEXML'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions241.htm';
+$oracle_functions_list_4{'UPDATEXML'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'UPDATEXML'}{'pginstruction'} = '';
+$oracle_functions_list_4{'UPDATEXML'}{'comments'} = q{};
+$oracle_functions_list_1{'UPPER'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions242.htm';
+$oracle_functions_list_1{'UPPER'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-string.html';
+$oracle_functions_list_1{'UPPER'}{'pginstruction'} = 'upper';
+$oracle_functions_list_1{'UPPER'}{'comments'} = q{Direct conversion but pay attention to LOB types.};
+$oracle_functions_list_1{'USER'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions243.htm';
+$oracle_functions_list_1{'USER'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-info.html';
+$oracle_functions_list_1{'USER'}{'pginstruction'} = 'session_user';
+$oracle_functions_list_1{'USER'}{'comments'} = q{};
+$oracle_functions_list_4{'USERENV'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions244.htm';
+$oracle_functions_list_4{'USERENV'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'USERENV'}{'pginstruction'} = '';
+$oracle_functions_list_4{'USERENV'}{'comments'} = q{};
+$oracle_functions_list_2{'VAR_POP'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions246.htm';
+$oracle_functions_list_2{'VAR_POP'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-aggregate.html';
+$oracle_functions_list_2{'VAR_POP'}{'pginstruction'} = 'var_pop';
+$oracle_functions_list_2{'VAR_POP'}{'comments'} = q{Beware of implicit conversions.};
+$oracle_functions_list_2{'VAR_SAMP'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions247.htm';
+$oracle_functions_list_2{'VAR_SAMP'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-aggregate.html';
+$oracle_functions_list_2{'VAR_SAMP'}{'pginstruction'} = 'var_samp';
+$oracle_functions_list_2{'VAR_SAMP'}{'comments'} = q{Beware of implicit conversions.};
+$oracle_functions_list_3{'VARIANCE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions248.htm';
+$oracle_functions_list_3{'VARIANCE'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-aggregate.html';
+$oracle_functions_list_3{'VARIANCE'}{'pginstruction'} = 'variance';
+$oracle_functions_list_3{'VARIANCE'}{'comments'} = q{PostgreSQL does not support the DISTINCT clause.};
+$oracle_functions_list_3{'VIEW'}{'sourcedocumentation'} = '';
+$oracle_functions_list_3{'VIEW'}{'pgdocumentation'} = '';
+$oracle_functions_list_3{'VIEW'}{'pginstruction'} = '';
+$oracle_functions_list_3{'VIEW'}{'comments'} = q{};
+$oracle_functions_list_3{'VSIZE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions249.htm';
+$oracle_functions_list_3{'VSIZE'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-binarystring.html';
+$oracle_functions_list_3{'VSIZE'}{'pginstruction'} = 'octet_length';
+$oracle_functions_list_3{'VSIZE'}{'comments'} = q{Beware of converted types. PostgreSQL supports char, varchar and text.};
+$oracle_functions_list_2{'WIDTH_BUCKET'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions250.htm';
+$oracle_functions_list_2{'WIDTH_BUCKET'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-math.html';
+$oracle_functions_list_2{'WIDTH_BUCKET'}{'pginstruction'} = 'width_bucket';
+$oracle_functions_list_2{'WIDTH_BUCKET'}{'comments'} = q{Beware of implicit conversions.};
+$oracle_functions_list_2{'XMLAGG'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions251.htm';
+$oracle_functions_list_2{'XMLAGG'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-xml.html';
+$oracle_functions_list_2{'XMLAGG'}{'pginstruction'} = 'xmlagg';
+$oracle_functions_list_2{'XMLAGG'}{'comments'} = q{Pay attention to the formatting (carriage return).};
+$oracle_functions_list_4{'XMLCDATA'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions253.htm';
+$oracle_functions_list_4{'XMLCDATA'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'XMLCDATA'}{'pginstruction'} = '';
+$oracle_functions_list_4{'XMLCDATA'}{'comments'} = q{};
+$oracle_functions_list_4{'XMLCOLATTVAL'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions254.htm';
+$oracle_functions_list_4{'XMLCOLATTVAL'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'XMLCOLATTVAL'}{'pginstruction'} = '';
+$oracle_functions_list_4{'XMLCOLATTVAL'}{'comments'} = q{};
+$oracle_functions_list_1{'XMLCOMMENT'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions255.htm';
+$oracle_functions_list_1{'XMLCOMMENT'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-xml.html';
+$oracle_functions_list_1{'XMLCOMMENT'}{'pginstruction'} = 'xmlcomment';
+$oracle_functions_list_1{'XMLCOMMENT'}{'comments'} = q{};
+$oracle_functions_list_3{'XMLCONCAT'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions256.htm';
+$oracle_functions_list_3{'XMLCONCAT'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-xml.html';
+$oracle_functions_list_3{'XMLCONCAT'}{'pginstruction'} = 'xmlconcat';
+$oracle_functions_list_3{'XMLCONCAT'}{'comments'} = q{A slight difference in the carriage return.};
+$oracle_functions_list_3{'XMLELEMENT'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions258.htm';
+$oracle_functions_list_3{'XMLELEMENT'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-xml.html';
+$oracle_functions_list_3{'XMLELEMENT'}{'pginstruction'} = 'xmlelement';
+$oracle_functions_list_3{'XMLELEMENT'}{'comments'} = q{The NOENTITYESCAPING and ENTITYESCAPING Oracle clauses are not supported on PostgreSQL.};
+$oracle_functions_list_3{'XMLEXISTS'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions259.htm';
+$oracle_functions_list_3{'XMLEXISTS'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-xml.html';
+$oracle_functions_list_3{'XMLEXISTS'}{'pginstruction'} = 'xmlexists';
+$oracle_functions_list_3{'XMLEXISTS'}{'comments'} = q{};
+$oracle_functions_list_3{'XMLFOREST'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions260.htm';
+$oracle_functions_list_3{'XMLFOREST'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-xml.html';
+$oracle_functions_list_3{'XMLFOREST'}{'pginstruction'} = 'xmlforest';
+$oracle_functions_list_3{'XMLFOREST'}{'comments'} = q{A slight difference in the carriage return.};
+$oracle_functions_list_3{'XMLPARSE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions262.htm';
+$oracle_functions_list_3{'XMLPARSE'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/datatype-xml.html';
+$oracle_functions_list_3{'XMLPARSE'}{'pginstruction'} = 'xmlparse';
+$oracle_functions_list_3{'XMLPARSE'}{'comments'} = q{If the WELLFORMED clause is used on Oracle, one could refer to the following xml_is_well_formed function on  https://www.postgresql.org/docs/current/static/functions-xml.html.};
+$oracle_functions_list_3{'XMLPI'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions264.htm';
+$oracle_functions_list_3{'XMLPI'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-xml.html';
+$oracle_functions_list_3{'XMLPI'}{'pginstruction'} = 'xmlpi';
+$oracle_functions_list_3{'XMLPI'}{'comments'} = q{};
+$oracle_functions_list_4{'XMLQUERY'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions265.htm';
+$oracle_functions_list_4{'XMLQUERY'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'XMLQUERY'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_4{'XMLQUERY'}{'comments'} = q{};
+$oracle_functions_list_3{'XMLROOT'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions266.htm';
+$oracle_functions_list_3{'XMLROOT'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-xml.html';
+$oracle_functions_list_3{'XMLROOT'}{'pginstruction'} = 'xmlroot';
+$oracle_functions_list_3{'XMLROOT'}{'comments'} = q{A slight difference in the carriage return.};
+$oracle_functions_list_4{'XMLSEQUENCE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions267.htm';
+$oracle_functions_list_4{'XMLSEQUENCE'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'XMLSEQUENCE'}{'pginstruction'} = '';
+$oracle_functions_list_4{'XMLSEQUENCE'}{'comments'} = q{};
+$oracle_functions_list_3{'XMLSERIALIZE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions268.htm';
+$oracle_functions_list_3{'XMLSERIALIZE'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/datatype-xml.html';
+$oracle_functions_list_3{'XMLSERIALIZE'}{'pginstruction'} = 'xmlserialize';
+$oracle_functions_list_3{'XMLSERIALIZE'}{'comments'} = q{};
+$oracle_functions_list_4{'XMLTABLE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions269.htm';
+$oracle_functions_list_4{'XMLTABLE'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'XMLTABLE'}{'pginstruction'} = 'No equivalent (before v10)';
+$oracle_functions_list_4{'XMLTABLE'}{'comments'} = q{Available in PostgreSQL 10.};
+$oracle_functions_list_4{'XMLTRANSFORM'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions270.htm';
+$oracle_functions_list_4{'XMLTRANSFORM'}{'pgdocumentation'} = '';
+$oracle_functions_list_4{'XMLTRANSFORM'}{'pginstruction'} = 'No equivalent';
+$oracle_functions_list_4{'XMLTRANSFORM'}{'comments'} = q{};
+$oracle_functions_list_2{'XMLTYPE'}{'sourcedocumentation'} = '';
+$oracle_functions_list_2{'XMLTYPE'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/datatype-xml.html';
+$oracle_functions_list_2{'XMLTYPE'}{'pginstruction'} = 'xml';
+$oracle_functions_list_2{'XMLTYPE'}{'comments'} = q{Oracle's XMLTYPE is equivalent to PostgreSQL xml type. Its use is dependant on libxml (can be checked with pg_config). Should be the case on all Redhat like systems.};
 
 # The list of orafce functions. So far the regexes are useless
 my %list_orafce_functions = (
@@ -540,7 +1550,7 @@ GetOptions(
     'D|directorytype=s'     => \$DIRECTORYTYPE,
     'e|extension=s@'        => \$EXTENSION,
     'f|format=s'            => \$OUTPUT_FORMAT,
-    'h|help'                => \$HELP,
+    'h|help:s'              => \&help_handler,
     'l|language=s'          => \$LANGUAGE,
     'o|output-file=s'       => \$OUTPUT_FILE,
     'O|output-directory=s'  => \$OUTPUT_DIRECTORY,
@@ -558,6 +1568,22 @@ GetOptions(
     'level4-minutes=i'      => \$LEVEL4_MINUTES,
     'minutes-per-workday=i' => \$MINUTES_PER_WORKDAY,
 );
+################################################################################
+# handling of help switch (with or without parameter)
+
+sub help_handler {
+    my ($opt_name, $opt_value) = @_;
+
+    options_handling();
+
+    print("Option name is $opt_name and value is $opt_value\n") if ($DEBUG);
+    if ($opt_value eq '') {
+        help_utilisation();
+    }
+    else {
+        help_instruction(uc $opt_value);
+    }
+}
 
 ################################################################################
 # Options handling
@@ -565,10 +1591,6 @@ GetOptions(
 sub options_handling {
 
     my %config_file;
-
-    if ($HELP) {
-        help_utilisation();
-    }
 
     if ($CONFIG_FILE) {
         my $conf = Config::General->new($CONFIG_FILE);
@@ -643,7 +1665,6 @@ sub options_handling {
     }
 
     # Add a "/" at the end of the directory if needed
-    
     if ($DIRECTORY) {
     	@dir_to_analyze = @$DIRECTORY;
     }
@@ -698,13 +1719,13 @@ sub options_handling {
         $MIGRATION_COST{"LVL1"} = $LEVEL1_MINUTES;
     }
     if ($LEVEL2_MINUTES) {
-        $MIGRATION_COST{"LVL2"} = $LEVEL1_MINUTES;
+        $MIGRATION_COST{"LVL2"} = $LEVEL2_MINUTES;
     }
     if ($LEVEL3_MINUTES) {
-        $MIGRATION_COST{"LVL3"} = $LEVEL1_MINUTES;
+        $MIGRATION_COST{"LVL3"} = $LEVEL3_MINUTES;
     }
     if ($LEVEL4_MINUTES) {
-        $MIGRATION_COST{"LVL4"} = $LEVEL1_MINUTES;
+        $MIGRATION_COST{"LVL4"} = $LEVEL4_MINUTES;
     }
     if ($QUIET) {
         $quiet_exec = 1;
@@ -795,7 +1816,9 @@ Usage: code2pg [--option value]
                              Can be used multiple times (-e ext1 -e ext2)
   -f, --format form        : report will be generated in the specified format
                              form = [txt|html|minimal]. Will be html by default
-  -h, --help               : print this help
+  -h, --help [instr]       : print this help.
+                             With a parameter, will print help on this 
+			     specific RDBMS instruction.
   -l, --language lang      : the chosen language calling the RDBMS
                              lang = [java|javascript|jsp|plsql|proc]
   --level1-minutes m       : minutes for a level1 instruction (1 by default)
@@ -827,6 +1850,77 @@ Examples:
 
 };
     exit(1);
+}
+
+################################################################################
+# print available help on a specific instruction
+
+sub print_help_instruction {
+    my $lvl = shift;          # the difficulty level of the instruction
+    my $instruction = shift;  # the instruction itself
+
+    print "\n" . uc $chosen_rdbms . "\n" . "=" x length($chosen_rdbms) . "\n";
+    print " - Instruction: $instruction\n";
+    if ( defined $rdbms_functions_list_{$lvl}{$instruction}{'sourcedocumentation'}) {
+        print " - Documentation: $rdbms_functions_list_{$lvl}{$instruction}{'sourcedocumentation'}\n";
+    }
+    print "\nPOSTGRESQL\n==========\n";
+    if ( defined $rdbms_functions_list_{$lvl}{$instruction}{'pginstruction'}) {
+        print " - Postgresql instruction: $rdbms_functions_list_{$lvl}{$instruction}{'pginstruction'}\n";
+    }
+    if ( defined $rdbms_functions_list_{$lvl}{$instruction}{'pgdocumentation'}) {
+        print " - Documentation: $rdbms_functions_list_{$lvl}{$instruction}{'pgdocumentation'}\n";
+    }
+    print " - Level $lvl - estimated time : " . $MIGRATION_COST{"LVL$lvl"} . " minutes.\n";
+
+    if ( defined $rdbms_functions_list_{$lvl}{$instruction}{'comments'}) {
+        my $c = $rdbms_functions_list_{$lvl}{$instruction}{'comments'} =~ s/^/  /gr;
+        print "\nCOMMENTS\n========\n$c\n";
+    }
+
+}
+
+################################################################################
+# generate help on a specific instruction (source > postgres)
+
+sub help_instruction {
+    my $instruction = shift;
+    if (exists $rdbms_functions_list_{1}{$instruction}) {
+        print_help_instruction(1, $instruction);
+    }
+    elsif (exists $rdbms_functions_list_{2}{$instruction}) {
+        print_help_instruction(2, $instruction);
+    }
+    elsif (exists $rdbms_functions_list_{3}{$instruction}) {
+        print_help_instruction(3, $instruction);
+    }
+    elsif (exists $rdbms_functions_list_{4}{$instruction}) {
+        print_help_instruction(4, $instruction);
+    }
+    else {
+        print "Instruction '$instruction' was not found !\n\nHere is the actual full list of instructions:\n";
+	my @l = keys($rdbms_functions_list_{1});
+	push(@l, keys($rdbms_functions_list_{2}));
+	push(@l, keys($rdbms_functions_list_{3}));
+	push(@l, keys($rdbms_functions_list_{4}));
+
+	# , $rdbms_functions_list_{2}, $rdbms_functions_list_{3}, $rdbms_functions_list_{4});
+	# foreach my $i (sort keys ($rdbms_functions_list_{1}, $rdbms_functions_list_{2}, $rdbms_functions_list_{3}, $rdbms_functions_list_{4})) {
+	my $cur_letter = 'a';
+	for my $i (sort (@l)) {
+            if (substr( $i, 0, 1 ) ne $cur_letter) {
+		$cur_letter = substr($i, 0, 1 );
+                print "\n$cur_letter:\n  ";
+	    }
+	    else {
+                print "$i ";
+	    }
+	    # print "$i ";
+	}
+	print "\n";
+	exit(2);
+    }
+    exit(0);
 }
 
 ################################################################################
@@ -1197,7 +2291,8 @@ tr:nth-child(even){background-color: #fbfbfb}
             { title: "file" },
             { title: "line number" },
             { title: "instruction" },
-            { title: "extract" }
+            { title: "extract" },
+            { title: "comments" }
         ]
     } );
 }
@@ -1589,7 +2684,9 @@ sub main {
 
         foreach my $level ( 1 .. 4 ) {
             foreach my $element ( keys %{$rdbms_functions_list_{$level}} ) { 
-                $current_regex = $regex_bef . $rdbms_functions_list_{$level}{$element} . $regex_aft;
+		    # print $element . '==>' . $rdbms_functions_list_{$level}{$element} . "\n";
+		# print $element . '==>regex ' . $rdbms_functions_list_{$level}{$element}{'regex'}  . "\n";
+                $current_regex = $regex_bef . $rdbms_functions_list_{$level}{$element}{'regex'} . $regex_aft;
                 
                 # the following regex matching is currently the program bottleneck
 		while ( $file_content =~ /$current_regex/gip) 
@@ -1607,7 +2704,26 @@ sub main {
                     }
                     if ($OUTPUT_FORMAT eq "html") {
                         my $mymatch = quotemeta ${^MATCH};
-                        $instruction_dataset .= "\n\t['$level', '$file', '$line_number', '$element', '$mymatch' ],";
+
+			# we add a comment column in the report and format it properly
+			my $comments = '';
+                        if ( defined $rdbms_functions_list_{$level}{$element}{'sourcedocumentation'}) {
+                            $comments .= "<a href=\"$rdbms_functions_list_{$level}{$element}{'sourcedocumentation'}\"  target=\"_blank\">Source documentation</a><br/>";
+                        }
+                        if ( defined $rdbms_functions_list_{$level}{$element}{'pgdocumentation'}) {
+                            $comments .= "<a href=\"$rdbms_functions_list_{$level}{$element}{'pgdocumentation'}\"  target=\"_blank\">PostgreSQL documentation</a><br/>";
+                        }
+                        if ( defined $rdbms_functions_list_{$level}{$element}{'pginstruction'}) {
+                            $comments .= "PostgreSQL instruction: $rdbms_functions_list_{$level}{$element}{'pginstruction'} <br/>";
+                        }
+                        if ( defined $rdbms_functions_list_{$level}{$element}{'comments'}) {
+			    my $newcomments = $rdbms_functions_list_{$level}{$element}{'comments'} =~ s/\n/<br\/>/gr; 
+			    $newcomments =~ s/'/&apos;/g; 
+			    $newcomments =~ s/"/&quot;/g; 
+			    $comments .= "Comments: $newcomments <br/>";
+                        }
+
+                        $instruction_dataset .= "\n\t['$level', '$file', '$line_number', '$element', '$mymatch', '$comments' ],";
                     }
 
                     # use edit-file ?
@@ -1720,7 +2836,8 @@ Usage: code2pg
 [--directorytype string]
 [--extension string]
 [--format string]
---language string
+[--help [instr]]
+[--language string]
 [--level1-minutes integer]
 [--level2-minutes integer]
 [--level3-minutes integer]
@@ -1735,8 +2852,6 @@ Usage: code2pg
 [--tagfiles]
 [--username string]
 [--version]
-
-code2pg B<--help>
 
 =head1 DESCRIPTION
 
@@ -1793,9 +2908,11 @@ Can be used multiple times, for eg: ./code2pg -e ext1 -e ext2 ...
 The report will be generated according to the specified format. It could be one
 of these values: txt, html or minimal. Defaults to html.
 
-=item B<-h> , B<--help>
+=item B<-h> , B<--help> [string]
 
 Prints a short help.
+With a parameter, prints help on the specified RDBMS instruction, such as 
+links to official documentation, comments, difficulty ...
 
 =item B<-l> , B<--language> string
 
