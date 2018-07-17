@@ -12,7 +12,8 @@ Usage: code2pg
 [--directorytype string]
 [--extension string]
 [--format string]
---language string
+[--help [instr]]
+[--language string]
 [--level1-minutes integer]
 [--level2-minutes integer]
 [--level3-minutes integer]
@@ -27,8 +28,6 @@ Usage: code2pg
 [--tagfiles]
 [--username string]
 [--version]
-
-code2pg B<--help>
 
 =head1 DESCRIPTION
 
@@ -85,9 +84,11 @@ Can be used multiple times, for eg: ./code2pg -e ext1 -e ext2 ...
 The report will be generated according to the specified format. It could be one
 of these values: txt, html or minimal. Defaults to html.
 
-=item B<-h> , B<--help>
+=item B<-h> , B<--help> [string]
 
 Prints a short help.
+With a parameter, prints help on the specified RDBMS instruction, such as 
+links to official documentation, comments, difficulty ...
 
 =item B<-l> , B<--language> string
 
@@ -191,10 +192,6 @@ Reports number of analyzed LOC is wrong (=0) for svn access.
 =item B<Limitation: Tag>
 
 Tagfiles cannot be used with a SVN repo yet.
-
-=item B<Limitation: extensions>
-
-Only one extension can be specified at a time.
 
 =item B<Limitation: tests>
 
