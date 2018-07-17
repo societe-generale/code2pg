@@ -57,6 +57,10 @@ Besides the complete [generated documentation](https://github.com/societe-genera
 ```
 ./code2pg --help
 ```
+- give some help on a specific instruction:
+```
+./code2pg --help COMMIT
+```
 - analyze java files in the current directory with an extension .java and generate an estimation.html report:
 ```
 ./code2pg -e java -l java
@@ -142,6 +146,33 @@ orafce usage                             No
 - html output: 
 
 ![code2pg html output screenshot](doc/code2pg_report_html.jpg)
+
+- help output:
+```
+[user@localhost curdir]$ ./code2pg -h ADD_MONTHS
+
+ORACLE
+======
+ - Instruction: ADD_MONTHS
+ - Documentation: http://docs.oracle.com/database/121/SQLRF/functions011.htm
+
+POSTGRESQL
+==========
+ - Postgresql instruction: No equivalent
+ - Documentation: 
+ - Level 3 - estimated time : 8 minutes.
+
+COMMENTS
+========
+  A function can be created. For example: CREATE OR REPLACE FUNCTION public.add_months(date date, months integer)
+ RETURNS date
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+RETURN (date + (months * '1 month' :: interval)) :: date;
+END;
+$function$
+```
 
 How to contribute?
 ------------------
