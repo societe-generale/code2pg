@@ -57,9 +57,13 @@ Besides the complete [generated documentation](https://github.com/societe-genera
 ```
 ./code2pg --help
 ```
-- give some help on a specific instruction:
+- get some help on a specific instruction in markdown format:
 ```
 ./code2pg --help COMMIT
+```
+- get some help on all available instructions and generate a pdf file :
+```
+./code2pg --help ALL_INSTRUCTIONS | pandoc -f markdown -o myfile.pdf
 ```
 - analyze java files in the current directory with an extension .java and generate an estimation.html report:
 ```
@@ -148,23 +152,29 @@ orafce usage                             No
 ![code2pg html output screenshot](doc/code2pg_report_html.jpg)
 
 - help output:
-```
-[user@localhost curdir]$ ./code2pg -h ADD_MONTHS
+````
+ADD_MONTHS
+==========
 
 ORACLE
-======
- - Instruction: ADD_MONTHS
- - Documentation: http://docs.oracle.com/database/121/SQLRF/functions011.htm
+------
+
+- Instruction: ADD_MONTHS
+- Documentation: http://docs.oracle.com/database/121/SQLRF/functions011.htm
 
 POSTGRESQL
-==========
- - Postgresql instruction: No equivalent
- - Documentation: 
- - Level 3 - estimated time : 8 minutes.
+-----------
+
+- Postgresql instruction: No equivalent
+- Documentation: 
+- Level 3 - estimated time : 8 minutes.
 
 COMMENTS
-========
-  A function can be created. For example: CREATE OR REPLACE FUNCTION public.add_months(date date, months integer)
+---------
+
+A function can be created. For example: 
+```
+CREATE OR REPLACE FUNCTION public.add_months(date date, months integer)
  RETURNS date
  LANGUAGE plpgsql
 AS $function$
@@ -173,6 +183,7 @@ RETURN (date + (months * '1 month' :: interval)) :: date;
 END;
 $function$
 ```
+````
 
 How to contribute?
 ------------------
