@@ -1,162 +1,209 @@
-[1mNAME[0m
-    code2pg - estimate the difficulty of a migration from Oracle to PostgreSQL
-    for application code.
+=head1 NAME
 
-[1mSYNOPSIS[0m
-    Usage: code2pg [--config-file string] [--csv-output string] [--directory
-    string] [--directorytype string] [--extension string] [--format string]
-    [--help [instr]] [--language string] [--level1-minutes integer]
-    [--level2-minutes integer] [--level3-minutes integer] [--level4-minutes
-    integer] [--minutes-per-workday integer] [--output-file] string
-    [--output-directory string] [--rdbms rdbms] [--orafce] [--password string]
-    [--quiet] [--tagfiles] [--username string] [--version]
+code2pg - estimate the difficulty of a migration from Oracle
+to PostgreSQL for application code.
 
-[1mDESCRIPTION[0m
-    code2pg will estimate in man-days how difficult a migration from Oracle to
-    PostgreSQL would be regarding application code. It does not handle the
-    database code as ora2pg does, only the given application code. Therefore,
-    a directory of source code (either files or svn) should be given as input
-    and code2pg will generate a report in one of the following format:
-    minimal, text or html.
+=head1 SYNOPSIS
 
-    The program can generate a csv output file, alerting the user on which
-    files (and which lines) were Oracle instructions encountered. It can also
-    directly tag the source code with special comments in order to navigate
-    quickly to those instructions.
+Usage: code2pg
+[--config-file string]
+[--csv-output string]
+[--directory string]
+[--directorytype string]
+[--extension string]
+[--format string]
+[--help [instr]]
+[--language string]
+[--level1-minutes integer]
+[--level2-minutes integer]
+[--level3-minutes integer]
+[--level4-minutes integer]
+[--minutes-per-workday integer]
+[--output-file] string
+[--output-directory string]
+[--rdbms rdbms]
+[--orafce]
+[--password string]
+[--quiet]
+[--tagfiles]
+[--username string]
+[--version]
 
-[1mOPTIONS[0m
-    [1m-c[0m , [1m--config-file[0m string
-        This configuration file will contain all user configurable switches.
-        An example file is given (code2pg.conf). If a parameter is present in
-        both config file and command line, the command line will take
-        precedence. If no configuration file is given, at least the extension
-        and language parameters are needed.
+=head1 DESCRIPTION
 
-    [1m-C[0m , [1m--csv-output[0m string
-        Oracle keywords will be redirected to this csv file. This file could
-        be used to monitor the progress of the migration while working on the
-        translation.
+code2pg will estimate in man-days how difficult a migration from Oracle to 
+PostgreSQL would be regarding application code. It does not handle the database 
+code as ora2pg does, only the given application code. Therefore, a directory of 
+source code (either files or svn) should be given as input and code2pg will 
+generate a report in one of the following format: minimal, text or html.
 
-    [1m-d[0m, [1m--directory[0m string
-        Specify which directory should be recursively analyzed. Defaults to
-        current directory.
+The program can generate a csv output file, alerting the user on which files
+(and which lines) were Oracle instructions encountered. It can also directly
+tag the source code with special comments in order to navigate quickly to those
+instructions.
 
-        Can be used multiple times, for eg: ./code2pg -d dir1 -d dir2 ...
+=head1 OPTIONS
 
-    [1m-D[0m, [1m--directorytype[0m string
-        Specify which type of directory will be analyzed. It could be a normal
-        directory within the filesystem or a remote svn access. Type =
-        [file|svn]. Defaults to file.
+=over
 
-    [1m-e[0m, [1m--extension[0m string
-        Which file extensions will be analyzed in the specified directory. No
-        preceding dot should be used. This should be set together with
-        [4mlanguage[0m when no configuration file is provided.
+=item B<-c> , B<--config-file> string
 
-        Can be used multiple times, for eg: ./code2pg -e ext1 -e ext2 ...
+This configuration file will contain all user configurable switches. An example 
+file is given (code2pg.conf). If a parameter is present in both config file and 
+command line, the command line will take precedence. If no configuration file 
+is given, at least the extension and language parameters are needed.
 
-    [1m-f[0m , [1m--format[0m string
-        The report will be generated according to the specified format. It
-        could be one of these values: txt, html or minimal. Defaults to html.
+=item B<-C> , B<--csv-output> string
 
-    [1m-h[0m , [1m--help[0m [string]
-        Prints a short help.
+Oracle keywords will be redirected to this csv file. This file could be used to 
+monitor the progress of the migration while working on the translation.
 
-        With a parameter, prints help on the specified RDBMS instruction in a
-        markdown format, such as links to official documentation, comments,
-        difficulty ... If this parameter is [4mall_instructions[0m, then all
-        available instructions will be sent to standard output.
+=item B<-d>, B<--directory> string
 
-    [1m-l[0m , [1m--language[0m string
-        The chosen language calling the RDBMS. This should be set together
-        with [4mextension[0m when no configuration file is provided. lang =
-        [java|proc|cobol|javascript|dotnet|plsql|...]
+Specify which directory should be recursively analyzed. Defaults to current
+directory. 
 
-    [1m--level1-minutes [0m integer
-        Number of minutes needed to translate a level1 instruction (1 by
-        default).
+Can be used multiple times, for eg: ./code2pg -d dir1 -d dir2 ...
 
-    [1m--level2-minutes [0m integer
-        Number of minutes needed to translate a level2 instruction (4 by
-        default).
+=item B<-D>, B<--directorytype> string
 
-    [1m--level3-minutes [0m integer
-        Number of minutes needed to translate a level3 instruction (8 by
-        default).
+Specify which type of directory will be analyzed. It could be a normal
+directory within the filesystem or a remote svn access.  Type = [file|svn].
+Defaults to file.
 
-    [1m--level4-minutes [0m integer
-        Number of minutes needed to translate a level4 instruction (16 by
-        default).
+=item B<-e>, B<--extension> string
 
-    [1m--minutes-per-workday [0m integer
-        Number of minutes per workday (360 by default).
+Which file extensions will be analyzed in the specified directory. No preceding
+dot should be used. This should be set together with I<language> when no 
+configuration file is provided.
 
-    [1m-o[0m , [1m--output-file[0m string
-        The name (without the directory) of the generated report. A good
-        practice would be to use a proper extension depending on the type of
-        report.
+Can be used multiple times, for eg: ./code2pg -e ext1 -e ext2 ...
 
-    [1m-O[0m , [1m--output-directory[0m string
-        Specifies in which directory the report will be saved.
+=item B<-f> , B<--format> string
 
-    [1m--rdbms[0m string
-        Migration will be from the specified RDBMS to PostgreSQL. So far, only
-        Oracle is supported.
+The report will be generated according to the specified format. It could be one
+of these values: txt, html or minimal. Defaults to html.
 
-        rdbms = [oracle]
+=item B<-h> , B<--help> [string]
 
-    [1m-r[0m , [1m--orafce[0m
-        Specifies if the migration will be using orafce. If so, many Oracle
-        instructions won't need to be translated and migrations will be eased.
+Prints a short help.
 
-    [1m-p[0m , [1m--password[0m
-        If the directory type is SVN, this will provide the password for the
-        required svn commands. Both password and username parameters must be
-        provided at the same time. If you do not wish to use this option on
-        the command line, you could save your svn credentials locally. The
-        file ~/.subversion/servers should be changed with store-passwords=yes
-        and store-plaintext-passwords=yes.
+With a parameter, prints help on the specified RDBMS instruction in a 
+markdown format, such as links to official documentation, comments, 
+difficulty ... If this parameter is I<all_instructions>, then all 
+available instructions will be sent to standard output. 
 
-    [1m-q[0m, [1m--quiet[0m
-        Do not output to stdout. This will silence notifications such as the
-        progress report.
+=item B<-l> , B<--language> string
 
-    [1m-t[0m , [1m--tagfiles[0m
-        Every time an Oracle instruction is encountered, the corresponding
-        file and line could be tagged in order to alert the developper. This
-        comment will be like CODE2PG_Instruction, which should allow easy
-        searching. As for now, only a local directory is supported (no svn).
+The chosen language calling the RDBMS. This should be set together with 
+I<extension> when no configuration file is provided.
+lang = [java|proc|cobol|javascript|dotnet|plsql|...]
 
-        Important: use on a copy of your files.
+=item B<--level1-minutes > integer
 
-    [1m-u[0m , [1m--username[0m
-        If the directory type is SVN, this will provide the username for the
-        required svn commands. Both password and username parameters must be
-        provided at the same time. If you do not wish to use this option on
-        the command line, you could save your svn credentials locally. The
-        file ~/.subversion/servers should be changed with store-passwords=yes
-        and store-plaintext-passwords=yes.
+Number of minutes needed to translate a level1 instruction (1 by default).
 
-    [1m-v[0m, [1m--version[0m
-        Print the version of the program and exit.
+=item B<--level2-minutes > integer
 
-[1mBUGS AND LIMITATIONS[0m
-    [1mBug: Regex[0m
-        too many false positives (user, last, least, ...).
+Number of minutes needed to translate a level2 instruction (4 by default).
 
-    [1mBug: Regex[0m
-        Strings in text could be used with " or '.
+=item B<--level3-minutes > integer
 
-    [1mBug: Reports [0m
-        Reports number of analyzed LOC is wrong (=0) for svn access.
+Number of minutes needed to translate a level3 instruction (8 by default).
 
-    [1mLimitation: Tag[0m
-        Tagfiles cannot be used with a SVN repo yet.
+=item B<--level4-minutes > integer
 
-    [1mLimitation: extensions[0m
-        Only one extension can be specified at a time.
+Number of minutes needed to translate a level4 instruction (16 by default).
 
-    [1mLimitation: tests[0m
-        Testing (non regression, functionnal, ...) is not included in the
-        estimation and can change rather drastically the cost in man-days.
+=item B<--minutes-per-workday > integer
+
+Number of minutes per workday (360 by default).
+
+=item B<-o> , B<--output-file> string
+
+The name (without the directory) of the generated report. A good practice
+would be to use a proper extension depending on the type of report.
+
+=item B<-O> , B<--output-directory> string
+
+Specifies in which directory the report will be saved.
+
+=item B<--rdbms> string
+
+Migration will be from the specified RDBMS to PostgreSQL. So far, only 
+Oracle is supported. 
+
+rdbms = [oracle]
+
+=item B<-r> , B<--orafce>
+
+Specifies if the migration will be using orafce. If so, many Oracle
+instructions won't need to be translated and migrations will be eased.
+
+=item B<-p> , B<--password>
+
+If the directory type is SVN, this will provide the password for the required
+svn commands. Both password and username parameters must be provided at the
+same time. If you do not wish to use this option on the command line, you could
+save your svn credentials locally. The file ~/.subversion/servers should be
+changed with store-passwords=yes and store-plaintext-passwords=yes.
+
+=item B<-q>, B<--quiet>
+
+Do not output to stdout. This will silence notifications such as the progress 
+report.
+
+=item B<-t> , B<--tagfiles>
+
+Every time an Oracle instruction is encountered, the corresponding file and
+line could be tagged in order to alert the developper. This comment will be
+like CODE2PG_Instruction, which should allow easy searching. As for
+now, only a local directory is supported (no svn).
+
+Important: use on a copy of your files.
+
+=item B<-u> , B<--username>
+
+If the directory type is SVN, this will provide the username for the required
+svn commands. Both password and username parameters must be provided at the
+same time. If you do not wish to use this option on the command line, you could
+save your svn credentials locally. The file ~/.subversion/servers should be
+changed with store-passwords=yes and store-plaintext-passwords=yes.
+
+=item B<-v>, B<--version>
+
+Print the version of the program and exit.
+
+=back
+
+=head1 BUGS AND LIMITATIONS
+
+=over
+
+=item B<Bug: Regex>
+
+too many false positives (user, last, least, ...).
+
+=item B<Bug: Regex>
+
+Strings in text could be used with " or '.
+
+=item B<Bug: Reports >
+
+Reports number of analyzed LOC is wrong (=0) for svn access.
+
+=item B<Limitation: Tag>
+
+Tagfiles cannot be used with a SVN repo yet.
+
+=item B<Limitation: extensions>
+
+Only one extension can be specified at a time.
+
+=item B<Limitation: tests>
+
+Testing (non regression, functionnal, ...) is not included in the estimation
+and can change rather drastically the cost in man-days.
+
+=back
 
