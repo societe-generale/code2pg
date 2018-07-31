@@ -2,7 +2,7 @@
 
 ################################################################################
 #
-# code2pg v0.11.0 - code migration estimation from Oracle to PostgreSQL
+# code2pg v0.11.1 - code migration estimation from Oracle to PostgreSQL
 #
 # Author: Anthony Nowocien anthony.nowocien@socgen.com
 # Copyright 2018 Société Générale
@@ -80,7 +80,7 @@ my %REGEX_AFTER = (
 ################################################################################
 # Internal variables and constants
 
-our $VERSION                = "0.11.0"; # this script version number
+our $VERSION                = "0.11.1"; # this script version number
 my  $CONFIG_FILE            = "";       # use of a config file
 my  $DEBUG                  = "";       # enable some debugging output
 my  $DIRECTORY              = "";       # the directory to analyze
@@ -415,18 +415,21 @@ $oracle_functions_list_1{'ACOS'}{'comments'} = q{Beware of implicit conversions}
 $oracle_functions_list_3{'ADD_MONTHS'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions011.htm';
 $oracle_functions_list_3{'ADD_MONTHS'}{'pgdocumentation'} = '';
 $oracle_functions_list_3{'ADD_MONTHS'}{'pginstruction'} = 'No equivalent';
-$oracle_functions_list_3{'ADD_MONTHS'}{'comments'} = q{A function can be created. For example: CREATE OR REPLACE FUNCTION public.add_months(date date, months integer)
+$oracle_functions_list_3{'ADD_MONTHS'}{'comments'} = q{A function can be created. For example: 
+```
+CREATE OR REPLACE FUNCTION public.add_months(date date, months integer)
  RETURNS date
  LANGUAGE plpgsql
 AS $function$
 BEGIN
 RETURN (date + (months * '1 month' :: interval)) :: date;
 END;
-$function$};
+$function$
+```};
 $oracle_functions_list_4{'APPENDCHILDXML'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions012.htm';
 $oracle_functions_list_4{'APPENDCHILDXML'}{'pgdocumentation'} = '';
 $oracle_functions_list_4{'APPENDCHILDXML'}{'pginstruction'} = '';
-$oracle_functions_list_4{'APPENDCHILDXML'}{'comments'} = q{};
+$oracle_functions_list_4{'APPENDCHILDXML'}{'comments'} = q{Deprecated Oracle instruction.};
 $oracle_functions_list_1{'ASCII'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions014.htm';
 $oracle_functions_list_1{'ASCII'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-string.html';
 $oracle_functions_list_1{'ASCII'}{'pginstruction'} = 'ascii';
@@ -472,10 +475,13 @@ $oracle_functions_list_3{'BITAND'}{'sourcedocumentation'} = 'http://docs.oracle.
 $oracle_functions_list_3{'BITAND'}{'pgdocumentation'} = '';
 $oracle_functions_list_3{'BITAND'}{'pginstruction'} = 'No equivalent';
 $oracle_functions_list_3{'BITAND'}{'comments'} = q{Can be implement with a function such as this one:
+```
 CREATE FUNCTION bitand (int, int)
 RETURNS int AS $$
 SELECT $1 & $2;
-$$ LANGUAGE sql IMMUTABLE STRICT;};
+$$ LANGUAGE sql IMMUTABLE STRICT;
+```
+};
 $oracle_functions_list_4{'CARDINALITY'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions023.htm';
 $oracle_functions_list_4{'CARDINALITY'}{'pgdocumentation'} = '';
 $oracle_functions_list_4{'CARDINALITY'}{'pginstruction'} = '';
@@ -483,7 +489,7 @@ $oracle_functions_list_4{'CARDINALITY'}{'comments'} = q{};
 $oracle_functions_list_3{'CAST'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions024.htm';
 $oracle_functions_list_3{'CAST'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/sql-expressions.html';
 $oracle_functions_list_3{'CAST'}{'pginstruction'} = 'cast';
-$oracle_functions_list_3{'CAST'}{'comments'} = q{The PostgreSQL function does not handle the MULTISET clause. Beware of implicit conversions.};
+$oracle_functions_list_3{'CAST'}{'comments'} = q{The PostgreSQL function does not handle the `MULTISET` clause. Beware of implicit conversions.};
 $oracle_functions_list_1{'CEIL'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions025.htm';
 $oracle_functions_list_1{'CEIL'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-math.html';
 $oracle_functions_list_1{'CEIL'}{'pginstruction'} = 'ceil';
@@ -495,7 +501,7 @@ $oracle_functions_list_4{'CHARTOROWID'}{'comments'} = q{};
 $oracle_functions_list_3{'CHR'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions027.htm';
 $oracle_functions_list_3{'CHR'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-string.html';
 $oracle_functions_list_3{'CHR'}{'pginstruction'} = 'chr';
-$oracle_functions_list_3{'CHR'}{'comments'} = q{The PostgreSQL function does not support the USING clause. Conversion can therefore be direct for simple case but more complex if this clause is used.};
+$oracle_functions_list_3{'CHR'}{'comments'} = q{The PostgreSQL function does not support the `USING` clause. Conversion can therefore be direct for simple case but more complex if this clause is used.};
 $oracle_functions_list_4{'CLUSTER_ID'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions030.htm';
 $oracle_functions_list_4{'CLUSTER_ID'}{'pgdocumentation'} = '';
 $oracle_functions_list_4{'CLUSTER_ID'}{'pginstruction'} = '';
@@ -519,7 +525,7 @@ $oracle_functions_list_4{'COLLECT'}{'comments'} = q{};
 $oracle_functions_list_2{'COMMIT'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/statements_4011.htm';
 $oracle_functions_list_2{'COMMIT'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/sql-commit.html';
 $oracle_functions_list_2{'COMMIT'}{'pginstruction'} = 'COMMIT';
-$oracle_functions_list_2{'COMMIT'}{'comments'} = q{Pay attention to the autocommit mode.  PostgreSQL only supports the WORK and TRANSACTION parameters. In a function, autocommit is also implicit.};
+$oracle_functions_list_2{'COMMIT'}{'comments'} = q{Pay attention to the autocommit mode.  PostgreSQL only supports the `WORK` and `TRANSACTION` parameters. In a function, autocommit is also implicit.};
 $oracle_functions_list_4{'COMPOSE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions035.htm';
 $oracle_functions_list_4{'COMPOSE'}{'pgdocumentation'} = '';
 $oracle_functions_list_4{'COMPOSE'}{'pginstruction'} = '';
@@ -563,15 +569,15 @@ $oracle_functions_list_1{'COUNT'}{'comments'} = q{Direct conversion};
 $oracle_functions_list_2{'COVAR_POP'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions047.htm';
 $oracle_functions_list_2{'COVAR_POP'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-aggregate.html';
 $oracle_functions_list_2{'COVAR_POP'}{'pginstruction'} = 'covar_pop';
-$oracle_functions_list_2{'COVAR_POP'}{'comments'} = q{Pay attention to implicit conversions and if an OVER clause is used. In this example, the date difference will be an integer, which might not be the result of the implicit conversion made by Oracle.};
+$oracle_functions_list_2{'COVAR_POP'}{'comments'} = q{Pay attention to implicit conversions and if an `OVER` clause is used. In this example, the date difference will be an integer, which might not be the result of the implicit conversion made by Oracle.};
 $oracle_functions_list_2{'COVAR_SAMP'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions048.htm';
 $oracle_functions_list_2{'COVAR_SAMP'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-aggregate.html';
 $oracle_functions_list_2{'COVAR_SAMP'}{'pginstruction'} = 'covar_samp';
-$oracle_functions_list_2{'COVAR_SAMP'}{'comments'} = q{Pay attention to implicit conversions and if an OVER clause is used.};
+$oracle_functions_list_2{'COVAR_SAMP'}{'comments'} = q{Pay attention to implicit conversions and if an `OVER` clause is used.};
 $oracle_functions_list_4{'CUME_DIST'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions050.htm';
 $oracle_functions_list_4{'CUME_DIST'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-window.html';
 $oracle_functions_list_4{'CUME_DIST'}{'pginstruction'} = 'cume_dist';
-$oracle_functions_list_4{'CUME_DIST'}{'comments'} = q{The PostgreSQL function does not handle the WITHIN GROUP clause. Have a look at DENSE_RANK for a similar rewrite.};
+$oracle_functions_list_4{'CUME_DIST'}{'comments'} = q{The PostgreSQL function does not handle the `WITHIN GROUP` clause. Have a look at `DENSE_RANK` for a similar rewrite.};
 $oracle_functions_list_1{'CURRENT_DATE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions051.htm';
 $oracle_functions_list_1{'CURRENT_DATE'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-datetime.html';
 $oracle_functions_list_1{'CURRENT_DATE'}{'pginstruction'} = 'current_date';
@@ -595,7 +601,7 @@ $oracle_functions_list_3{'DBTIMEZONE'}{'comments'} = q{};
 $oracle_functions_list_3{'DECODE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions057.htm';
 $oracle_functions_list_3{'DECODE'}{'pgdocumentation'} = '';
 $oracle_functions_list_3{'DECODE'}{'pginstruction'} = 'No equivalent';
-$oracle_functions_list_3{'DECODE'}{'comments'} = q{Code needs to be rewritten with the help of the CASE instruction.};
+$oracle_functions_list_3{'DECODE'}{'comments'} = q{Code needs to be rewritten with the help of the `CASE` instruction.};
 $oracle_functions_list_4{'DECOMPOSE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions058.htm';
 $oracle_functions_list_4{'DECOMPOSE'}{'pgdocumentation'} = '';
 $oracle_functions_list_4{'DECOMPOSE'}{'pginstruction'} = 'No equivalent';
@@ -607,7 +613,7 @@ $oracle_functions_list_4{'DELETEXML'}{'comments'} = q{Deprecated function in Ora
 $oracle_functions_list_3{'DENSE_RANK'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions060.htm';
 $oracle_functions_list_3{'DENSE_RANK'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-window.html';
 $oracle_functions_list_3{'DENSE_RANK'}{'pginstruction'} = 'dense_rank';
-$oracle_functions_list_3{'DENSE_RANK'}{'comments'} = q{Could need a heavy rewrite with a clause such as WITHIN GROUP.};
+$oracle_functions_list_3{'DENSE_RANK'}{'comments'} = q{Could need a heavy rewrite with a clause such as `WITHIN GROUP`.};
 $oracle_functions_list_4{'DEPTH'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions061.htm';
 $oracle_functions_list_4{'DEPTH'}{'pgdocumentation'} = '';
 $oracle_functions_list_4{'DEPTH'}{'pginstruction'} = '';
@@ -643,7 +649,7 @@ $oracle_functions_list_1{'EXP'}{'comments'} = q{Direct conversion};
 $oracle_functions_list_3{'EXTRACT'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions067.htm';
 $oracle_functions_list_3{'EXTRACT'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-datetime.html';
 $oracle_functions_list_3{'EXTRACT'}{'pginstruction'} = 'extract';
-$oracle_functions_list_3{'EXTRACT'}{'comments'} = q{EXTRACT can be used on XML or datetime types. Pay attention to precision (9 on Oracle, 6 on PostgreSQL by default).};
+$oracle_functions_list_3{'EXTRACT'}{'comments'} = q{`EXTRACT` can be used on XML or datetime types. Pay attention to precision (9 on Oracle, 6 on PostgreSQL by default).};
 $oracle_functions_list_4{'EXTRACTVALUE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions069.htm';
 $oracle_functions_list_4{'EXTRACTVALUE'}{'pgdocumentation'} = '';
 $oracle_functions_list_4{'EXTRACTVALUE'}{'pginstruction'} = '';
@@ -703,7 +709,7 @@ $oracle_functions_list_4{'INSERTXMLBEFORE'}{'comments'} = q{};
 $oracle_functions_list_4{'INSTR'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions089.htm';
 $oracle_functions_list_4{'INSTR'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-string.html';
 $oracle_functions_list_4{'INSTR'}{'pginstruction'} = 'strpos';
-$oracle_functions_list_4{'INSTR'}{'comments'} = q{If the Oracle function only takes the first two arguments, then strpos can be used. Other arguments are not implemented in PostgreSQL. If this function is frequently used, it could be created in the following way:  https://www.postgresql.org/docs/current/static/plpgsql-porting.html#PLPGSQL-PORTING-APPENDIX };
+$oracle_functions_list_4{'INSTR'}{'comments'} = q{If the Oracle function only takes the first two arguments, then `strpos` can be used. Other arguments are not implemented in PostgreSQL. If this function is frequently used, it could be created in the following way:  https://www.postgresql.org/docs/current/static/plpgsql-porting.html#PLPGSQL-PORTING-APPENDIX };
 $oracle_functions_list_3{'IS NAN'}{'sourcedocumentation'} = '';
 $oracle_functions_list_3{'IS NAN'}{'pgdocumentation'} = '';
 $oracle_functions_list_3{'IS NAN'}{'pginstruction'} = '';
@@ -720,13 +726,16 @@ $oracle_functions_list_4{'LAST_DAY'}{'sourcedocumentation'} = 'http://docs.oracl
 $oracle_functions_list_4{'LAST_DAY'}{'pgdocumentation'} = '';
 $oracle_functions_list_4{'LAST_DAY'}{'pginstruction'} = 'No equivalent';
 $oracle_functions_list_4{'LAST_DAY'}{'comments'} = q{The function could be created in such a way: 
+```
 CREATE OR REPLACE FUNCTION public.last_day(date)
  RETURNS date
  LANGUAGE sql
  IMMUTABLE STRICT
 AS $function$
   SELECT (date_trunc ('MONTH', $1) + INTERVAL '1 MONTH - 1 day') :: date;
-  $function$};
+  $function$
+```
+};
 $oracle_functions_list_3{'LEAST'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions099.htm';
 $oracle_functions_list_3{'LEAST'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-conditional.html';
 $oracle_functions_list_3{'LEAST'}{'pginstruction'} = 'least';
@@ -754,11 +763,11 @@ $oracle_functions_list_2{'LENGTHC'}{'comments'} = q{Function renaming};
 $oracle_functions_list_4{'LEVEL'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/pseudocolumns001.htm';
 $oracle_functions_list_4{'LEVEL'}{'pgdocumentation'} = '';
 $oracle_functions_list_4{'LEVEL'}{'pginstruction'} = 'No';
-$oracle_functions_list_4{'LEVEL'}{'comments'} = q{Query needs to be rewritten with a WITH RECURSIVE (https://www.postgresql.org/docs/current/static/queries-with.html).};
+$oracle_functions_list_4{'LEVEL'}{'comments'} = q{Query needs to be rewritten with a `WITH RECURSIVE` (https://www.postgresql.org/docs/current/static/queries-with.html).};
 $oracle_functions_list_3{'LISTAGG'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions101.htm';
 $oracle_functions_list_3{'LISTAGG'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-aggregate.html';
 $oracle_functions_list_3{'LISTAGG'}{'pginstruction'} = 'string_agg';
-$oracle_functions_list_3{'LISTAGG'}{'comments'} = q{The PostgreSQL function only uses 2 parameters and does not accept the WITHIN GROUP clause.};
+$oracle_functions_list_3{'LISTAGG'}{'comments'} = q{The PostgreSQL function only uses 2 parameters and does not accept the `WITHIN` GROUP clause.};
 $oracle_functions_list_1{'LN'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions102.htm';
 $oracle_functions_list_1{'LN'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-math.html';
 $oracle_functions_list_1{'LN'}{'pginstruction'} = 'ln';
@@ -821,7 +830,7 @@ $oracle_functions_list_4{'MONTHS_BETWEEN'}{'sourcedocumentation'} = 'http://docs
 $oracle_functions_list_4{'MONTHS_BETWEEN'}{'pgdocumentation'} = '';
 $oracle_functions_list_4{'MONTHS_BETWEEN'}{'pginstruction'} = 'No equivalent';
 $oracle_functions_list_4{'MONTHS_BETWEEN'}{'comments'} = q{The Oracle function returns a float. If an integer is expected, this code could be used:
-select extract(year from age('02-02-1995'::date, '01-01-1995'::date))*12 + extract(month from age('02-02-1995'::date, '01-01-1995'::date));};
+`select extract(year from age('02-02-1995'::date, '01-01-1995'::date))*12 + extract(month from age('02-02-1995'::date, '01-01-1995'::date));`};
 $oracle_functions_list_3{'NANVL'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions115.htm';
 $oracle_functions_list_3{'NANVL'}{'pgdocumentation'} = '';
 $oracle_functions_list_3{'NANVL'}{'pginstruction'} = 'No equivalent';
@@ -836,7 +845,7 @@ $oracle_functions_list_4{'NEXT_DAY'}{'pginstruction'} = 'No equivalent';
 $oracle_functions_list_4{'NEXT_DAY'}{'comments'} = q{};
 $oracle_functions_list_2{'NEXTVAL'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/pseudocolumns002.htm';
 $oracle_functions_list_2{'NEXTVAL'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-sequence.html';
-$oracle_functions_list_2{'NEXTVAL'}{'pginstruction'} = 'NEXTVAL';
+$oracle_functions_list_2{'NEXTVAL'}{'pginstruction'} = 'nextval';
 $oracle_functions_list_2{'NEXTVAL'}{'comments'} = q{The Oracle pseudo-column needs to be translated to a function in PostgreSQL.};
 $oracle_functions_list_4{'NLS_CHARSET_DECL_LEN'}{'sourcedocumentation'} = 'http://docs.oracle.com/cd/E11882_01/server.112/e41084/functions107.htm';
 $oracle_functions_list_4{'NLS_CHARSET_DECL_LEN'}{'pgdocumentation'} = '';
@@ -897,7 +906,7 @@ $oracle_functions_list_4{'PATH'}{'comments'} = q{};
 $oracle_functions_list_3{'PERCENT_RANK'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions140.htm';
 $oracle_functions_list_3{'PERCENT_RANK'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-window.html';
 $oracle_functions_list_3{'PERCENT_RANK'}{'pginstruction'} = 'percent_rank';
-$oracle_functions_list_3{'PERCENT_RANK'}{'comments'} = q{The Postgresql function does support the WITHIN GROUP clause. Needs a similar rewriting as dense_rank.};
+$oracle_functions_list_3{'PERCENT_RANK'}{'comments'} = q{The Postgresql function does support the `WITHIN GROUP` clause. Needs a similar rewriting as dense_rank.};
 $oracle_functions_list_4{'PERCENTILE_CONT'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions141.htm';
 $oracle_functions_list_4{'PERCENTILE_CONT'}{'pgdocumentation'} = '';
 $oracle_functions_list_4{'PERCENTILE_CONT'}{'pginstruction'} = '';
@@ -953,7 +962,7 @@ $oracle_functions_list_4{'PREVIOUS'}{'comments'} = q{};
 $oracle_functions_list_3{'RANK'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions155.htm';
 $oracle_functions_list_3{'RANK'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-window.html';
 $oracle_functions_list_3{'RANK'}{'pginstruction'} = 'rank';
-$oracle_functions_list_3{'RANK'}{'comments'} = q{The Postgresql function does support the WITHIN GROUP clause. Needs a similar rewriting as dense_rank.};
+$oracle_functions_list_3{'RANK'}{'comments'} = q{The Postgresql function does support the `WITHIN GROUP` clause. Needs a similar rewriting as dense_rank.};
 $oracle_functions_list_4{'RAWTOHEX'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions157.htm';
 $oracle_functions_list_4{'RAWTOHEX'}{'pgdocumentation'} = '';
 $oracle_functions_list_4{'RAWTOHEX'}{'pginstruction'} = '';
@@ -1053,15 +1062,15 @@ $oracle_functions_list_4{'ROWIDTONCHAR'}{'comments'} = q{};
 $oracle_functions_list_3{'ROWNUM'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/pseudocolumns009.htm';
 $oracle_functions_list_3{'ROWNUM'}{'pgdocumentation'} = '';
 $oracle_functions_list_3{'ROWNUM'}{'pginstruction'} = 'limit or windowing functions or generate_series';
-$oracle_functions_list_3{'ROWNUM'}{'comments'} = q{Beware of the ORDER BY clause. One should use a windowing function if the goal is to enumarate lines.};
+$oracle_functions_list_3{'ROWNUM'}{'comments'} = q{Beware of the `ORDER BY` clause. One should use a windowing function if the goal is to enumarate lines.};
 $oracle_functions_list_2{'RPAD'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions173.htm';
 $oracle_functions_list_2{'RPAD'}{'pgdocumentation'} = '';
 $oracle_functions_list_2{'RPAD'}{'pginstruction'} = '';
-$oracle_functions_list_2{'RPAD'}{'comments'} = q{Pay attention to LOB types and implicit conversions.};
+$oracle_functions_list_2{'RPAD'}{'comments'} = q{Pay attention to `LOB` types and implicit conversions.};
 $oracle_functions_list_2{'RTRIM'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions174.htm';
 $oracle_functions_list_2{'RTRIM'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-string.html';
 $oracle_functions_list_2{'RTRIM'}{'pginstruction'} = 'rtrim';
-$oracle_functions_list_2{'RTRIM'}{'comments'} = q{Pay attention to LOB types and implicit conversions.};
+$oracle_functions_list_2{'RTRIM'}{'comments'} = q{Pay attention to `LOB` types and implicit conversions.};
 $oracle_functions_list_4{'SCN_TO_TIMESTAMP'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions175.htm';
 $oracle_functions_list_4{'SCN_TO_TIMESTAMP'}{'pgdocumentation'} = '';
 $oracle_functions_list_4{'SCN_TO_TIMESTAMP'}{'pginstruction'} = '';
@@ -1093,7 +1102,7 @@ $oracle_functions_list_3{'SINH'}{'comments'} = q{A function can be created if ne
 $oracle_functions_list_3{'SOUNDEX'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions181.htm';
 $oracle_functions_list_3{'SOUNDEX'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/fuzzystrmatch.html';
 $oracle_functions_list_3{'SOUNDEX'}{'pginstruction'} = 'soundex';
-$oracle_functions_list_3{'SOUNDEX'}{'comments'} = q{The fuzzystrmatch extension needs to be installed to use soundex.};
+$oracle_functions_list_3{'SOUNDEX'}{'comments'} = q{The `fuzzystrmatch` extension needs to be installed to use soundex.};
 $oracle_functions_list_1{'SQRT'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions182.htm';
 $oracle_functions_list_1{'SQRT'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-math.html';
 $oracle_functions_list_1{'SQRT'}{'pginstruction'} = 'sqrt';
@@ -1117,7 +1126,7 @@ $oracle_functions_list_4{'STATS_KS_TEST'}{'comments'} = q{};
 $oracle_functions_list_4{'STATS_MODE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions188.htm';
 $oracle_functions_list_4{'STATS_MODE'}{'pgdocumentation'} = '';
 $oracle_functions_list_4{'STATS_MODE'}{'pginstruction'} = 'No equivalent';
-$oracle_functions_list_4{'STATS_MODE'}{'comments'} = q{Use windowing functions. The code besides should be checked more thoroughly.};
+$oracle_functions_list_4{'STATS_MODE'}{'comments'} = q{Use windowing functions.};
 $oracle_functions_list_4{'STATS_MW_TEST'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions189.htm';
 $oracle_functions_list_4{'STATS_MW_TEST'}{'pgdocumentation'} = '';
 $oracle_functions_list_4{'STATS_MW_TEST'}{'pginstruction'} = '';
@@ -1137,7 +1146,7 @@ $oracle_functions_list_4{'STATS_WSR_TEST'}{'comments'} = q{};
 $oracle_functions_list_2{'STDDEV'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions193.htm';
 $oracle_functions_list_2{'STDDEV'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-aggregate.html';
 $oracle_functions_list_2{'STDDEV'}{'pginstruction'} = 'stddev';
-$oracle_functions_list_2{'STDDEV'}{'comments'} = q{PostgreSQL does not support the DISTINCT clause (STTDEV (DISTINCT expr)).};
+$oracle_functions_list_2{'STDDEV'}{'comments'} = q{PostgreSQL does not support the `DISTINCT` clause (STTDEV (DISTINCT expr)).};
 $oracle_functions_list_2{'STDDEV_POP'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions194.htm';
 $oracle_functions_list_2{'STDDEV_POP'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-aggregate.html';
 $oracle_functions_list_2{'STDDEV_POP'}{'pginstruction'} = 'stddev_pop';
@@ -1161,7 +1170,7 @@ $oracle_functions_list_4{'SYNONYM'}{'comments'} = q{};
 $oracle_functions_list_4{'SYS_CONNECT_BY_PATH'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions198.htm';
 $oracle_functions_list_4{'SYS_CONNECT_BY_PATH'}{'pgdocumentation'} = '';
 $oracle_functions_list_4{'SYS_CONNECT_BY_PATH'}{'pginstruction'} = 'No equivalent';
-$oracle_functions_list_4{'SYS_CONNECT_BY_PATH'}{'comments'} = q{Needs to be rewritten with a WITH RECURSIVE (https://www.postgresql.org/docs/current/static/queries-with.html)};
+$oracle_functions_list_4{'SYS_CONNECT_BY_PATH'}{'comments'} = q{Needs to be rewritten with a `WITH RECURSIVE` (https://www.postgresql.org/docs/current/static/queries-with.html)};
 $oracle_functions_list_4{'SYS_CONTEXT'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions199.htm';
 $oracle_functions_list_4{'SYS_CONTEXT'}{'pgdocumentation'} = '';
 $oracle_functions_list_4{'SYS_CONTEXT'}{'pginstruction'} = '';
@@ -1193,7 +1202,7 @@ $oracle_functions_list_4{'SYS_XMLGEN'}{'comments'} = q{};
 $oracle_functions_list_2{'SYSDATE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions207.htm';
 $oracle_functions_list_2{'SYSDATE'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-datetime.html';
 $oracle_functions_list_2{'SYSDATE'}{'pginstruction'} = 'localtimestamp';
-$oracle_functions_list_2{'SYSDATE'}{'comments'} = q{Check NLS_DATE_FORMAT.};
+$oracle_functions_list_2{'SYSDATE'}{'comments'} = q{Check `NLS_DATE_FORMAT`.};
 $oracle_functions_list_1{'SYSTIMESTAMP'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions208.htm';
 $oracle_functions_list_1{'SYSTIMESTAMP'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-datetime.html';
 $oracle_functions_list_1{'SYSTIMESTAMP'}{'pginstruction'} = 'current_timestamp';
@@ -1221,7 +1230,7 @@ $oracle_functions_list_2{'TO_BINARY_FLOAT'}{'comments'} = q{};
 $oracle_functions_list_3{'TO_CHAR'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions216.htm';
 $oracle_functions_list_3{'TO_CHAR'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-formatting.html';
 $oracle_functions_list_3{'TO_CHAR'}{'pginstruction'} = 'to_char';
-$oracle_functions_list_3{'TO_CHAR'}{'comments'} = q{TO_CHAR can be used with datetime, number and character types. The PostgreSQL equivalent cannot be used with a Large Object.};
+$oracle_functions_list_3{'TO_CHAR'}{'comments'} = q{`TO_CHAR` can be used with datetime, number and character types. The PostgreSQL equivalent cannot be used with a Large Object.};
 $oracle_functions_list_4{'TO_CLOB'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions218.htm';
 $oracle_functions_list_4{'TO_CLOB'}{'pgdocumentation'} = '';
 $oracle_functions_list_4{'TO_CLOB'}{'pginstruction'} = '';
@@ -1245,7 +1254,7 @@ $oracle_functions_list_4{'TO_MULTI_BYTE'}{'comments'} = q{};
 $oracle_functions_list_4{'TO_NCHAR'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions225.htm';
 $oracle_functions_list_4{'TO_NCHAR'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-formatting.html';
 $oracle_functions_list_4{'TO_NCHAR'}{'pginstruction'} = 'to_char';
-$oracle_functions_list_4{'TO_NCHAR'}{'comments'} = q{TO_NCHAR can be used on number, datetime, character types. Once converted, the PostgreSQL to_char function could be used if the fmt and nlsparam parameters are not needed.};
+$oracle_functions_list_4{'TO_NCHAR'}{'comments'} = q{`TO_NCHAR` can be used on number, datetime, character types. Once converted, the PostgreSQL to_char function could be used if the fmt and nlsparam parameters are not needed.};
 $oracle_functions_list_4{'TO_NCLOB'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions226.htm';
 $oracle_functions_list_4{'TO_NCLOB'}{'pgdocumentation'} = '';
 $oracle_functions_list_4{'TO_NCLOB'}{'pginstruction'} = '';
@@ -1285,11 +1294,11 @@ $oracle_functions_list_2{'TRIM'}{'comments'} = q{Pay attention to LOB types and 
 $oracle_functions_list_2{'TRUNC'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions237.htm';
 $oracle_functions_list_2{'TRUNC'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-math.html';
 $oracle_functions_list_2{'TRUNC'}{'pginstruction'} = 'trunc';
-$oracle_functions_list_2{'TRUNC'}{'comments'} = q{It is possible to use TRUNC on number and date types. Be careful, an Oracle TRUNC on a date will be a date_trunc on PostgreSQL. This function will return a timestamp (and not a date).};
+$oracle_functions_list_2{'TRUNC'}{'comments'} = q{It is possible to use `TRUNC` on number and date types. Be careful, an Oracle `TRUNC` on a date will be a date_trunc on PostgreSQL. This function will return a timestamp (and not a date).};
 $oracle_functions_list_3{'TZ_OFFSET'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions238.htm';
 $oracle_functions_list_3{'TZ_OFFSET'}{'pgdocumentation'} = '';
 $oracle_functions_list_3{'TZ_OFFSET'}{'pginstruction'} = 'No equivalent';
-$oracle_functions_list_3{'TZ_OFFSET'}{'comments'} = q{Needs to be adapted if the Oracle function uses the SESSIONTIMEZONE or DBTIMEZON parameter.};
+$oracle_functions_list_3{'TZ_OFFSET'}{'comments'} = q{Needs to be adapted if the Oracle function uses the `SESSIONTIMEZONE` or `DBTIMEZONE` parameter.};
 $oracle_functions_list_4{'UID'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions239.htm';
 $oracle_functions_list_4{'UID'}{'pgdocumentation'} = '';
 $oracle_functions_list_4{'UID'}{'pginstruction'} = '';
@@ -1325,7 +1334,7 @@ $oracle_functions_list_2{'VAR_SAMP'}{'comments'} = q{Beware of implicit conversi
 $oracle_functions_list_3{'VARIANCE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions248.htm';
 $oracle_functions_list_3{'VARIANCE'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-aggregate.html';
 $oracle_functions_list_3{'VARIANCE'}{'pginstruction'} = 'variance';
-$oracle_functions_list_3{'VARIANCE'}{'comments'} = q{PostgreSQL does not support the DISTINCT clause.};
+$oracle_functions_list_3{'VARIANCE'}{'comments'} = q{PostgreSQL does not support the `DISTINCT` clause.};
 $oracle_functions_list_3{'VIEW'}{'sourcedocumentation'} = '';
 $oracle_functions_list_3{'VIEW'}{'pgdocumentation'} = '';
 $oracle_functions_list_3{'VIEW'}{'pginstruction'} = '';
@@ -1373,7 +1382,7 @@ $oracle_functions_list_3{'XMLFOREST'}{'comments'} = q{A slight difference in the
 $oracle_functions_list_3{'XMLPARSE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions262.htm';
 $oracle_functions_list_3{'XMLPARSE'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/datatype-xml.html';
 $oracle_functions_list_3{'XMLPARSE'}{'pginstruction'} = 'xmlparse';
-$oracle_functions_list_3{'XMLPARSE'}{'comments'} = q{If the WELLFORMED clause is used on Oracle, one could refer to the following xml_is_well_formed function on  https://www.postgresql.org/docs/current/static/functions-xml.html.};
+$oracle_functions_list_3{'XMLPARSE'}{'comments'} = q{If the `WELLFORMED` clause is used on Oracle, one could refer to the following xml_is_well_formed function on  https://www.postgresql.org/docs/current/static/functions-xml.html.};
 $oracle_functions_list_3{'XMLPI'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions264.htm';
 $oracle_functions_list_3{'XMLPI'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-xml.html';
 $oracle_functions_list_3{'XMLPI'}{'pginstruction'} = 'xmlpi';
@@ -1405,7 +1414,7 @@ $oracle_functions_list_4{'XMLTRANSFORM'}{'comments'} = q{};
 $oracle_functions_list_2{'XMLTYPE'}{'sourcedocumentation'} = '';
 $oracle_functions_list_2{'XMLTYPE'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/datatype-xml.html';
 $oracle_functions_list_2{'XMLTYPE'}{'pginstruction'} = 'xml';
-$oracle_functions_list_2{'XMLTYPE'}{'comments'} = q{Oracle's XMLTYPE is equivalent to PostgreSQL xml type. Its use is dependant on libxml (can be checked with pg_config). Should be the case on all Redhat like systems.};
+$oracle_functions_list_2{'XMLTYPE'}{'comments'} = q{Oracle's `XMLTYPE` is equivalent to PostgreSQL xml type. Its use is dependant on libxml (can be checked with pg_config). Should be the case on all Redhat like systems.};
 
 # The list of orafce functions. So far the regexes are useless
 my %list_orafce_functions = (
@@ -1818,7 +1827,8 @@ Usage: code2pg [--option value]
                              form = [txt|html|minimal]. Will be html by default
   -h, --help [instr]       : print this help.
                              With a parameter, will print help on this 
-			     specific RDBMS instruction.
+			     specific RDBMS instruction in markdown format.
+			     instr can also be set to "all_instructions" 
   -l, --language lang      : the chosen language calling the RDBMS
                              lang = [java|javascript|jsp|plsql|proc]
   --level1-minutes m       : minutes for a level1 instruction (1 by default)
@@ -1830,7 +1840,7 @@ Usage: code2pg [--option value]
                              For html, will be estimation.html by default
   -O, --output-directory dir: the report will be stored in this directory
   -p, --password pwd       : password for SVN access
-  -q, --quiet              : do not output to stdout. Useful for batch 
+  -q, --quiet              : do not output progress to stdout. Useful for batch 
                              processing and redirection.
   --rdbms rdbms            : from which RDBMS the migration will take place.
                              Only Oracle is possible now.  (oracle by default)
@@ -1847,9 +1857,23 @@ Examples:
   ./code2pg -e properties -l plsql -d /tmp/project -o project_estimate.html 
   ./code2pg -D svn -d https://mysvnrepo/project/trunk -l java -e java -f txt
   ./code2pg -c myconfigfile.conf
+  ./code2pg -h ADD_MONTHS
 
 };
     exit(1);
+}
+
+################################################################################
+# return sorted array of rdbms keywords
+
+sub get_sorted_rdbms_keywords {
+    my @srk = keys($rdbms_functions_list_{1});
+    push(@srk, keys($rdbms_functions_list_{2}));
+    push(@srk, keys($rdbms_functions_list_{3}));
+    push(@srk, keys($rdbms_functions_list_{4}));
+    @srk = sort @srk;
+    
+    return @srk;
 }
 
 ################################################################################
@@ -1859,23 +1883,24 @@ sub print_help_instruction {
     my $lvl = shift;          # the difficulty level of the instruction
     my $instruction = shift;  # the instruction itself
 
-    print "\n" . uc $chosen_rdbms . "\n" . "=" x length($chosen_rdbms) . "\n";
-    print " - Instruction: $instruction\n";
+    print "\n" . uc $instruction . "\n" . "=" x length($instruction) . "\n";
+
+    print "\n" . uc $chosen_rdbms . "\n" . "-" x length($chosen_rdbms) . "\n\n";
+    print "- Instruction: $instruction\n";
     if ( defined $rdbms_functions_list_{$lvl}{$instruction}{'sourcedocumentation'}) {
-        print " - Documentation: $rdbms_functions_list_{$lvl}{$instruction}{'sourcedocumentation'}\n";
+        print "- Documentation: $rdbms_functions_list_{$lvl}{$instruction}{'sourcedocumentation'}\n";
     }
-    print "\nPOSTGRESQL\n==========\n";
+    print "\nPOSTGRESQL\n-----------\n\n";
     if ( defined $rdbms_functions_list_{$lvl}{$instruction}{'pginstruction'}) {
-        print " - Postgresql instruction: $rdbms_functions_list_{$lvl}{$instruction}{'pginstruction'}\n";
+        print "- Postgresql instruction: $rdbms_functions_list_{$lvl}{$instruction}{'pginstruction'}\n";
     }
     if ( defined $rdbms_functions_list_{$lvl}{$instruction}{'pgdocumentation'}) {
-        print " - Documentation: $rdbms_functions_list_{$lvl}{$instruction}{'pgdocumentation'}\n";
+        print "- Documentation: $rdbms_functions_list_{$lvl}{$instruction}{'pgdocumentation'}\n";
     }
-    print " - Level $lvl - estimated time : " . $MIGRATION_COST{"LVL$lvl"} . " minutes.\n";
+    print "- Level $lvl - estimated time : " . $MIGRATION_COST{"LVL$lvl"} . " minutes.\n";
 
     if ( defined $rdbms_functions_list_{$lvl}{$instruction}{'comments'}) {
-        my $c = $rdbms_functions_list_{$lvl}{$instruction}{'comments'} =~ s/^/  /gr;
-        print "\nCOMMENTS\n========\n$c\n";
+        print "\nCOMMENTS\n---------\n\n$rdbms_functions_list_{$lvl}{$instruction}{'comments'}\n";
     }
 
 }
@@ -1885,6 +1910,27 @@ sub print_help_instruction {
 
 sub help_instruction {
     my $instruction = shift;
+
+    if ($instruction eq 'ALL_INSTRUCTIONS') {
+        my @l = get_sorted_rdbms_keywords();
+	for my $i (@l) {
+            if (exists $rdbms_functions_list_{1}{$i}) {
+                print_help_instruction(1, $i);
+            }
+            elsif (exists $rdbms_functions_list_{2}{$i}) {
+                print_help_instruction(2, $i);
+            }
+            elsif (exists $rdbms_functions_list_{3}{$i}) {
+                print_help_instruction(3, $i);
+            }
+            elsif (exists $rdbms_functions_list_{4}{$i}) {
+                print_help_instruction(4, $i);
+            }
+	}
+	exit 0;
+
+    }
+
     if (exists $rdbms_functions_list_{1}{$instruction}) {
         print_help_instruction(1, $instruction);
     }
@@ -1899,23 +1945,17 @@ sub help_instruction {
     }
     else {
         print "Instruction '$instruction' was not found !\n\nHere is the actual full list of instructions:\n";
-	my @l = keys($rdbms_functions_list_{1});
-	push(@l, keys($rdbms_functions_list_{2}));
-	push(@l, keys($rdbms_functions_list_{3}));
-	push(@l, keys($rdbms_functions_list_{4}));
+	my @l = get_sorted_rdbms_keywords();
 
-	# , $rdbms_functions_list_{2}, $rdbms_functions_list_{3}, $rdbms_functions_list_{4});
-	# foreach my $i (sort keys ($rdbms_functions_list_{1}, $rdbms_functions_list_{2}, $rdbms_functions_list_{3}, $rdbms_functions_list_{4})) {
 	my $cur_letter = 'a';
-	for my $i (sort (@l)) {
+	for my $i (@l) {
             if (substr( $i, 0, 1 ) ne $cur_letter) {
 		$cur_letter = substr($i, 0, 1 );
                 print "\n$cur_letter:\n  ";
 	    }
 	    else {
-                print "$i ";
+                print "$i; ";
 	    }
-	    # print "$i ";
 	}
 	print "\n";
 	exit(2);
@@ -2911,8 +2951,11 @@ of these values: txt, html or minimal. Defaults to html.
 =item B<-h> , B<--help> [string]
 
 Prints a short help.
-With a parameter, prints help on the specified RDBMS instruction, such as 
-links to official documentation, comments, difficulty ...
+
+With a parameter, prints help on the specified RDBMS instruction in a 
+markdown format, such as links to official documentation, comments, 
+difficulty ... If this parameter is I<all_instructions>, then all 
+available instructions will be sent to standard output. 
 
 =item B<-l> , B<--language> string
 
@@ -2978,7 +3021,7 @@ report.
 
 Every time an Oracle instruction is encountered, the corresponding file and
 line could be tagged in order to alert the developper. This comment will be
-like CODE2PG_OracleInstruction, which should allow easy searching. As for
+like CODE2PG_Instruction, which should allow easy searching. As for
 now, only a local directory is supported (no svn).
 
 Important: use on a copy of your files.
