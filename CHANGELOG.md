@@ -1,9 +1,13 @@
 # Changelog
 
+## 0.11.1 (31/07/2018)
+
+- Added `./code2pg --help all_instructions`, in order to generate a markdown file containing all instructions. This could be piped to pandoc for example and give a nicely formatted html/pdf file. 
+
 ## 0.11.0 (16/07/2018)
 
 - Adding comments in the html report. This was a feature request by EDF. 
-- Bug correction in --level[1..4]-minutes command line switch.
+- Bug correction in `--level[1..4]-minutes` command line switch.
 
 ## 0.10.3 (03/07/2018)
 
