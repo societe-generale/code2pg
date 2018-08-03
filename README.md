@@ -19,18 +19,18 @@ It can:
 Prerequisites :
 -------------
 
-`code2pg` is a standalone script. It requires the `File::Slurp`, `File::Find::Rule`, `Text::ASCIITable` and `Config::General` Perl modules. They can be obtained either from a CPAN client or from your distribution.
+`code2pg` is a standalone script. It requires the `File::Slurp`, `File::Find::Rule` and `Config::General` Perl modules. They can be obtained either from a CPAN client or from your distribution.
 
 On a Centos 7(+) box, it can be installed this way:
 
 ```
-sudo yum install perl-Text-ASCIITable perl-File-Slurp perl-File-Find-Rule perl-Config-General
+sudo yum install perl-File-Slurp perl-File-Find-Rule perl-Config-General
 ```
 
 On a Debian box, the packages could be installed with:
 
 ```
-sudo apt-get install libtext-asciitable-perl libfile-slurp-perl libfile-find-rule-perl libconfig-general-perl
+sudo apt-get install libfile-slurp-perl libfile-find-rule-perl libconfig-general-perl
 ```
 
 The script has been tested on Windows with Strawberry Perl (v5.24.3) with the proper modules installed (the CPAN client can be used for this). A warning is issued though as `wc` is usually not recognized.
