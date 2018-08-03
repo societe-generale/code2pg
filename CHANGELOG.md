@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.11.2 (03/08/2018)
+
+- The module Text::ASCIITable is no longer needed. The text output is now markdown compatible.
+- Some corrections raised by perlcritic. 
+
 ## 0.11.1 (31/07/2018)
 
 - Added `./code2pg --help all_instructions`, in order to generate a markdown file containing all instructions. This could be piped to pandoc for example and give a nicely formatted html/pdf file. 
