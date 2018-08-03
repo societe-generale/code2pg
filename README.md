@@ -51,7 +51,7 @@ chmod +x code2pg
 Usage
 -----
 
-Besides the complete [generated documentation](https://github.com/societe-generale/code2pg/blob/master/doc/code2pg.pod), here a few examples:
+Please refer to the complete [generated documentation](https://github.com/societe-generale/code2pg/blob/master/doc/code2pg.pod) for more details. Here a few examples:
 
 - show the command line options of the tool:
 ```
@@ -69,7 +69,7 @@ Besides the complete [generated documentation](https://github.com/societe-genera
 ```
 ./code2pg -e java -l java
 ```
-- analyze java, jsp and .properties files in the current directory. This will so far need two reports as Oracle instructins will need to be analyzed in "" delimited strings, but directly in .properties files:
+- analyze java, jsp and .properties files in the current directory. This will so far need two reports as Oracle instructions will need to be analyzed in "" delimited strings, but directly in .properties files:
 ```
 ./code2pg -e java -e jsp -l java -f myproject_java.html
 ./code2pg -e properties -l plsql -f myproject_properties.html
