@@ -2,7 +2,7 @@
 
 ## 0.11.2 (03/08/2018)
 
-- The module Text::ASCIITable is no longer needed. The text output is now markdown compatible.
+- The module `Text::ASCIITable` is no longer needed. The text output is now markdown compatible.
 - Some corrections raised by perlcritic. 
 
 ## 0.11.1 (31/07/2018)
