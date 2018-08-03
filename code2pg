@@ -2,7 +2,7 @@
 
 ################################################################################
 #
-# code2pg v0.11.1 - code migration estimation from Oracle to PostgreSQL
+# code2pg v0.11.2 - code migration estimation from Oracle to PostgreSQL
 #
 # Author: Anthony Nowocien anthony.nowocien@socgen.com
 # Copyright 2018 Société Générale
@@ -34,7 +34,6 @@
 ################################################################################
 
 # Caution: code2pg needs extra packages:
-#          - Text::ASCIITable (only mandatory for text output)
 #          - File::Slurp
 #          - File::Find::Rule
 #          - Config::General
@@ -80,7 +79,7 @@ my %REGEX_AFTER = (
 ################################################################################
 # Internal variables and constants
 
-our $VERSION                = "0.11.1"; # this script version number
+our $VERSION                = "0.11.2"; # this script version number
 my  $CONFIG_FILE            = "";       # use of a config file
 my  $DEBUG                  = "";       # enable some debugging output
 my  $DIRECTORY              = "";       # the directory to analyze
@@ -225,7 +224,7 @@ $oracle_functions_list_3{'BITAND'}{'regex'}            = '\bBITAND\s*\(';
 $oracle_functions_list_3{'BULK COLLECT'}{'regex'}      = '\bBULK\s*COLLECT\b';
 $oracle_functions_list_3{'CAST'}{'regex'}              = '\bCAST\s*\(';
 $oracle_functions_list_3{'CHR'}{'regex'}               = '\bCHR\s*\(';
-$oracle_functions_list_3{'CURSOR'}{'regex'}            = '\bCURSOR\s+', # correct it, too many false positive;
+$oracle_functions_list_3{'CURSOR'}{'regex'}            = '\bCURSOR\s+'; # correct it, too many false positive;
 $oracle_functions_list_3{'DBTIMEZONE'}{'regex'}        = '\bDBTIMEZONE\b';
 $oracle_functions_list_3{'DECODE'}{'regex'}            = '\bDECODE\s*\(';
 $oracle_functions_list_3{'DENSE_RANK'}{'regex'}        = '\bDENSE_RANK\s*\(';
@@ -293,7 +292,7 @@ $oracle_functions_list_4{'DECOMPOSE'}{'regex'}                    = '\bDECOMPOSE
 $oracle_functions_list_4{'DELETEXML'}{'regex'}                    = '\bDELETEXML\s*\(';
 $oracle_functions_list_4{'DEPTH'}{'regex'}                        = '\bDEPTH\s*\(';
 $oracle_functions_list_4{'DEREF'}{'regex'}                        = '\bDEREF\s*\(';
-$oracle_functions_list_4{'DUMP'}{'regex'}                         = '\bDUMP\b', # use the parenthesis ;
+$oracle_functions_list_4{'DUMP'}{'regex'}                         = '\bDUMP\b'; # use the parenthesis ;
 $oracle_functions_list_4{'EMPTY_BLOB'}{'regex'}                   = '\bEMPTY_BLOB\s*\(';
 $oracle_functions_list_4{'EMPTY_CLOB'}{'regex'}                   = '\bEMPTY_CLOB\s*\(';
 $oracle_functions_list_4{'EXISTSNODE'}{'regex'}                   = '\bEXISTSNODE\s*\(';
@@ -303,7 +302,7 @@ $oracle_functions_list_4{'FEATURE_SET'}{'regex'}                  = '\bFEATURE_S
 $oracle_functions_list_4{'FEATURE_VALUE'}{'regex'}                = '\bFEATURE_VALUE\s*\(';
 $oracle_functions_list_4{'FROM_TZ'}{'regex'}                      = '\bFROM_TZ\s*\(';
 $oracle_functions_list_4{'GROUP_ID'}{'regex'}                     = '\bGROUP_ID\s*\(';
-$oracle_functions_list_4{'GROUPING'}{'regex'}                     = '\bGROUPING\b', # use the parenthesis ;
+$oracle_functions_list_4{'GROUPING'}{'regex'}                     = '\bGROUPING\b'; # use the parenthesis ;
 $oracle_functions_list_4{'GROUPING_ID'}{'regex'}                  = '\bGROUPING_ID\s*\(';
 $oracle_functions_list_4{'HEXTORAW'}{'regex'}                     = '\bHEXTORAW\s*\(';
 $oracle_functions_list_4{'INSERTCHILDXML'}{'regex'}               = '\bINSERTCHILDXML\s*\(';
@@ -313,10 +312,10 @@ $oracle_functions_list_4{'ITERATION_NUMBER'}{'regex'}             = '\bITERATION
 $oracle_functions_list_4{'LAST_DAY'}{'regex'}                     = '\bLAST_DAY\s*\(';
 $oracle_functions_list_4{'LENGTH2'}{'regex'}                      = '\bLENGTH2\s*\(';
 $oracle_functions_list_4{'LENGTH4'}{'regex'}                      = '\bLENGTH4\s*\(';
-$oracle_functions_list_4{'LEVEL'}{'regex'}                        = '(,|\s+)\bLEVEL\s*(,|FROM)', # Pseudo co;
+$oracle_functions_list_4{'LEVEL'}{'regex'}                        = '(,|\s+)\bLEVEL\s*(,|FROM)'; # Pseudo co;
 $oracle_functions_list_4{'MAKE_REF'}{'regex'}                     = '\bMAKE_REF\b';
 $oracle_functions_list_4{'MEDIAN'}{'regex'}                       = '\bMEDIAN\s*\(';
-$oracle_functions_list_4{'MERGE'}{'regex'}                        = '\bMERGE\s+',  # MERGE [hint] INTO ..;
+$oracle_functions_list_4{'MERGE'}{'regex'}                        = '\bMERGE\s+';  # MERGE [hint] INTO ..;
 $oracle_functions_list_4{'MONTHS_BETWEEN'}{'regex'}               = '\bMONTHS_BETWEEN\s*\(';
 $oracle_functions_list_4{'NEW_TIME'}{'regex'}                     = '\bNEW_TIME\s*\(';
 $oracle_functions_list_4{'NEXT_DAY'}{'regex'}                     = '\bNEXT_DAY\s*\(';
@@ -362,7 +361,7 @@ $oracle_functions_list_4{'STATS_KS_TEST'}{'regex'}                = '\bSTATS_KS_
 $oracle_functions_list_4{'STATS_MODE'}{'regex'}                   = '\bSTATS_MODE\s*\(';
 $oracle_functions_list_4{'STATS_MW_TEST'}{'regex'}                = '\bSTATS_MW_TEST\s*\(';
 $oracle_functions_list_4{'STATS_ONE_WAY_ANOVA'}{'regex'}          = '\bSTATS_ONE_WAY_ANOVA\s*\(';
-$oracle_functions_list_4{'STATS_T_TEST_'}{'regex'}                = '\bSTATS_T_TEST',    # _[ONE|PAIRED|INDEP|INDEPU;
+$oracle_functions_list_4{'STATS_T_TEST_'}{'regex'}                = '\bSTATS_T_TEST';    # _[ONE|PAIRED|INDEP|INDEPU;
 $oracle_functions_list_4{'STATS_WSR_TEST'}{'regex'}               = '\bSTATS_WSR_TEST\s*\(';
 $oracle_functions_list_4{'SYNONYM'}{'regex'}                      = '\bSYNONYM\b';
 $oracle_functions_list_4{'SYS_CONNECT_BY_PATH'}{'regex'}          = '\bSYS_CONNECT_BY_PATH\s*\(';
@@ -416,7 +415,7 @@ $oracle_functions_list_3{'ADD_MONTHS'}{'sourcedocumentation'} = 'http://docs.ora
 $oracle_functions_list_3{'ADD_MONTHS'}{'pgdocumentation'} = '';
 $oracle_functions_list_3{'ADD_MONTHS'}{'pginstruction'} = 'No equivalent';
 $oracle_functions_list_3{'ADD_MONTHS'}{'comments'} = q{A function can be created. For example: 
-```
+```sql
 CREATE OR REPLACE FUNCTION public.add_months(date date, months integer)
  RETURNS date
  LANGUAGE plpgsql
@@ -475,7 +474,7 @@ $oracle_functions_list_3{'BITAND'}{'sourcedocumentation'} = 'http://docs.oracle.
 $oracle_functions_list_3{'BITAND'}{'pgdocumentation'} = '';
 $oracle_functions_list_3{'BITAND'}{'pginstruction'} = 'No equivalent';
 $oracle_functions_list_3{'BITAND'}{'comments'} = q{Can be implement with a function such as this one:
-```
+```sql
 CREATE FUNCTION bitand (int, int)
 RETURNS int AS $$
 SELECT $1 & $2;
@@ -726,7 +725,7 @@ $oracle_functions_list_4{'LAST_DAY'}{'sourcedocumentation'} = 'http://docs.oracl
 $oracle_functions_list_4{'LAST_DAY'}{'pgdocumentation'} = '';
 $oracle_functions_list_4{'LAST_DAY'}{'pginstruction'} = 'No equivalent';
 $oracle_functions_list_4{'LAST_DAY'}{'comments'} = q{The function could be created in such a way: 
-```
+```sql
 CREATE OR REPLACE FUNCTION public.last_day(date)
  RETURNS date
  LANGUAGE sql
@@ -1592,6 +1591,8 @@ sub help_handler {
     else {
         help_instruction(uc $opt_value);
     }
+
+    return 1;
 }
 
 ################################################################################
@@ -1892,7 +1893,7 @@ sub print_help_instruction {
     }
     print "\nPOSTGRESQL\n-----------\n\n";
     if ( defined $rdbms_functions_list_{$lvl}{$instruction}{'pginstruction'}) {
-        print "- Postgresql instruction: $rdbms_functions_list_{$lvl}{$instruction}{'pginstruction'}\n";
+        print "- PostgreSQL instruction: $rdbms_functions_list_{$lvl}{$instruction}{'pginstruction'}\n";
     }
     if ( defined $rdbms_functions_list_{$lvl}{$instruction}{'pgdocumentation'}) {
         print "- Documentation: $rdbms_functions_list_{$lvl}{$instruction}{'pgdocumentation'}\n";
@@ -1902,6 +1903,8 @@ sub print_help_instruction {
     if ( defined $rdbms_functions_list_{$lvl}{$instruction}{'comments'}) {
         print "\nCOMMENTS\n---------\n\n$rdbms_functions_list_{$lvl}{$instruction}{'comments'}\n";
     }
+
+    return 1;
 
 }
 
@@ -1913,6 +1916,9 @@ sub help_instruction {
 
     if ($instruction eq 'ALL_INSTRUCTIONS') {
         my @l = get_sorted_rdbms_keywords();
+	print "---\ntitle: ". uc $chosen_rdbms . " to PostgreSQL instructions\n";
+	print "author: code2pg\ndate: '$today'\n---\n\n";
+
 	for my $i (@l) {
             if (exists $rdbms_functions_list_{1}{$i}) {
                 print_help_instruction(1, $i);
@@ -2024,105 +2030,80 @@ sub terminal_output {
     my $nb_fic             = shift;
     my $total_nb_lines     = shift;
 
-    if (eval {require Text::ASCIITable; 1} ne 1) {
-        die("Unable to load Perl module Text::ASCIITable !\n");
-    }
-    else {
-        Text::ASCIITable->import();
-    }
-
     # Create a table for the instructions
-    my $tbl_instructions = Text::ASCIITable->new();
-    $tbl_instructions->setCols( 'Level', 'Instruction', 'Number' );
-    $tbl_instructions->addRowLine();
+    my $tbl_instructions;
+    $tbl_instructions .= "| Level | Instruction          | Number |\n|-------|----------------------|--------|\n";
     foreach my $level ( sort keys %niv_ ) {
         foreach my $el ( sort keys %{ $niv_{$level} } ) {
-            $tbl_instructions->addRow( $level, $el, $niv_{$level}{$el} );
+            $tbl_instructions .= "|     $level | " . sprintf("%20s", $el);
+	    $tbl_instructions .= " | " . sprintf("%6d", $niv_{$level}{$el}) . " |\n";
         }
-        $tbl_instructions->addRowLine();
     }
 
     # Create a difficulty table
-    my $tbl_output = Text::ASCIITable->new();
-    $tbl_output->setCols(
-        '',
-        'Number of instructions',
-        'Time/instruction',
-        'Estimated time (minutes)',
-        'Man-days'
-    );
+    my $tbl_output;
+    $tbl_output .= "|            | Number of instructions | Time/instruction | Estimated time (minutes) | Man-days |\n";
+    $tbl_output .= "|------------|------------------------|------------------|--------------------------|----------|\n";
 
-    # Could use a loop instead (look for $n_nivX)
-    $tbl_output->addRow(
-        'Level 1',
-        $n_lvl1,
-        $MIGRATION_COST{"LVL1"},
-        $n_lvl1 * $MIGRATION_COST{"LVL1"},
-        sprintf( "%.2f", $n_lvl1 * $MIGRATION_COST{"LVL1"} / $workday_minutes )
-    );
-    $tbl_output->addRow(
-        'Level 2',
-        $n_lvl2,
-        $MIGRATION_COST{"LVL2"},
-        $n_lvl2 * $MIGRATION_COST{"LVL2"},
-        sprintf( "%.2f", $n_lvl2 * $MIGRATION_COST{"LVL2"} / $workday_minutes )
-    );
-    $tbl_output->addRow(
-        'Level 3',
-        $n_lvl3,
-        $MIGRATION_COST{"LVL3"},
-        $n_lvl3 * $MIGRATION_COST{"LVL3"},
-        sprintf( "%.2f", $n_lvl3 * $MIGRATION_COST{"LVL3"} / $workday_minutes )
-    );
-    $tbl_output->addRow(
-        'Level 4',
-        $n_lvl4,
-        $MIGRATION_COST{"LVL4"},
-        $n_lvl4 * $MIGRATION_COST{"LVL4"},
-        sprintf( "%.2f", $n_lvl4 * $MIGRATION_COST{"LVL4"} / $workday_minutes )
-    );
-    $tbl_output->addRowLine();
+    $tbl_output .= "| Level 1    | " . sprintf( "%22d", $n_lvl1) . " | " ;
+    $tbl_output .= sprintf("%16d", $MIGRATION_COST{"LVL1"}) . " | ";
+    $tbl_output .= sprintf("%24d", $n_lvl1 * $MIGRATION_COST{"LVL1"}) . " | ";
+    $tbl_output .= sprintf( "%8.1f", $n_lvl1 * $MIGRATION_COST{"LVL1"} / $workday_minutes ) . " |\n";
+    
+    $tbl_output .= "| Level 2    | " . sprintf( "%22d", $n_lvl2) . " | " ;
+    $tbl_output .= sprintf("%16d", $MIGRATION_COST{"LVL2"}) . " | " ;
+    $tbl_output .= sprintf("%24d", $n_lvl2 * $MIGRATION_COST{"LVL2"}) . " | ";
+    $tbl_output .= sprintf( "%8.1f", $n_lvl2 * $MIGRATION_COST{"LVL2"} / $workday_minutes ) . " |\n";
+
+    $tbl_output .= "| Level 3    | " . sprintf( "%22d", $n_lvl3) . " | " ;
+    $tbl_output .= sprintf("%16d", $MIGRATION_COST{"LVL3"}) . " | " ;
+    $tbl_output .= sprintf("%24d", $n_lvl3 * $MIGRATION_COST{"LVL3"}) . " | ";
+    $tbl_output .= sprintf( "%8.1f", $n_lvl3 * $MIGRATION_COST{"LVL3"} / $workday_minutes ) . " |\n";
+
+    $tbl_output .= "| Level 4    | " . sprintf( "%22d", $n_lvl4) . " | " ;
+    $tbl_output .= sprintf("%16d", $MIGRATION_COST{"LVL4"}) . " | " ;
+    $tbl_output .= sprintf("%24d", $n_lvl4 * $MIGRATION_COST{"LVL4"}) . " | ";
+    $tbl_output .= sprintf( "%8.1f", $n_lvl4 * $MIGRATION_COST{"LVL4"} / $workday_minutes ) . " |\n";
+
 
     if ( $nb_fct_tot == 0 ) {
-        $tbl_output->addRow(
-            'Application code estimation',
-            $nb_fct_tot,
-            sprintf( "%.2f", 0 ),
-            $estimated_load,
-            sprintf( "%.2f", $estimated_load_md )
-        );
+        $tbl_output .= "| estimation | " . sprintf("%22d", $nb_fct_tot) . " | ";
+        $tbl_output .= sprintf( "%16.1f", 0 ) . " | ";
+        $tbl_output .= sprintf("%24d", $estimated_load) . " | ";
+        $tbl_output .= sprintf( "%8.1f", $estimated_load_md ) . " |";
     }
     else {
-        $tbl_output->addRow(
-            'Application code estimation',
-            $nb_fct_tot,
-            sprintf( "%.2f", $estimated_load / $nb_fct_tot ),
-            $estimated_load,
-            sprintf( "%.2f", $estimated_load_md )
-        );
+        $tbl_output .= "| estimation | " . sprintf("%22d", $nb_fct_tot) . " | ";
+        $tbl_output .= sprintf( "%16.1f", $estimated_load / $nb_fct_tot );
+        $tbl_output .= " | " . sprintf("%24d", $estimated_load) . " | ";
+        $tbl_output .= sprintf( "%8.1f", $estimated_load_md ). " |";
     }
-    $tbl_output->addRowLine();
 
-    my $analyzed_ext_align = sprintf( "Number of files with extension .%-8s %d", $ext_to_analyze, $nb_fic );
     my $orafce_usage = $ORAFCE ? "Yes" : "No";
 
-    my $dir_to_analyze = join("\n                                         ", @dir_to_analyze);
+    my $dir_to_analyze = join("\n  -", @dir_to_analyze);
 
     my $term_output = qq{
-.----------------------------------------------------------------------------------------------------------------.
-|                                            code2pg                                                             |
-'----------------------------------------------------------------------------------------------------------------'
+Settings
+========
 
-Version                                  $VERSION
-Analysis date                            $today
-Source code directory                    $dir_to_analyze
-$analyzed_ext_align
-Language                                 $chosen_language
-Number of analyzed LOC                   $total_nb_lines
-Log file                                 $csv_file_output
-orafce usage                             $orafce_usage
+- Version code2pg: $VERSION
+- Analysis date: $today
+- Source code directory: $dir_to_analyze
+- Number of .$ext_to_analyze files: $nb_fic
+- Language: $chosen_language
+- Number of analyzed LOC: $total_nb_lines
+- Log file: $csv_file_output
+- orafce usage: $orafce_usage
+
+Estimates
+=========
 
 $tbl_output
+
+Instructions
+============
+
 $tbl_instructions
 };
 
@@ -2565,17 +2546,18 @@ tr:nth-child(even){background-color: #fbfbfb}
 sub print_output_file {
     my $file_content = shift;
 
-    open( my $fh_n, '>:encoding(UTF-8)', $csv_file_output )
-      or die "Impossible to open the file $csv_file_output !\n Error: $!";
-
     $file_content =~ s/\h+/ /g;    # We clean our csv output at first
     $file_content =~ s/\r//g;
+
+    open( my $fh_n, '>:encoding(UTF-8)', $csv_file_output )
+      or die "Impossible to open the file $csv_file_output !\n Error: $!";
 
     print STDERR "\nWriting to csv output... " if ($DEBUG);
     print {$fh_n} "difficulty;file;line number;instruction;extract;\n$file_content";
     print STDERR "Complete!\n" if ($DEBUG);
 
     close $fh_n;
+
     return 1;
 }
 
@@ -2947,6 +2929,8 @@ Can be used multiple times, for eg: ./code2pg -e ext1 -e ext2 ...
 
 The report will be generated according to the specified format. It could be one
 of these values: txt, html or minimal. Defaults to html.
+
+The txt output is markdown compatible.
 
 =item B<-h> , B<--help> [string]
 
