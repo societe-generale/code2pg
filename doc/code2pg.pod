@@ -84,6 +84,8 @@ Can be used multiple times, for eg: ./code2pg -e ext1 -e ext2 ...
 The report will be generated according to the specified format. It could be one
 of these values: txt, html or minimal. Defaults to html.
 
+The txt output is markdown compatible.
+
 =item B<-h> , B<--help> [string]
 
 Prints a short help.
