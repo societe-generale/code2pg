@@ -51,13 +51,13 @@ chmod +x code2pg
 Usage
 -----
 
-Please refer to the complete [generated documentation](https://github.com/societe-generale/code2pg/blob/master/doc/code2pg.pod) for more details. Here a few examples:
+Please refer to the complete [generated documentation](https://github.com/societe-generale/code2pg/blob/master/doc/code2pg.pod) for more details. Here are a few examples:
 
 - show the command line options of the tool:
 ```
 ./code2pg --help
 ```
-- get some help on a specific instruction in markdown format:
+- get some help on a specific instruction. The output is in markdown format:
 ```
 ./code2pg --help COMMIT
 ```
@@ -100,51 +100,48 @@ Estimation: 0.19 man-days
 - text output:
 
 ```
-.----------------------------------------------------------------------------------------------------------------.
-|                                            code2pg                                                             |
-'----------------------------------------------------------------------------------------------------------------'
+Settings
+========
 
-Version                                  0.9
-Analysis date                            05/10/2017
-Source code directory                    /home/user/migration-project/
-Number of files with extension .properties 13
-Language                                 plsql
-Number of analyzed LOC                   1826
-Log file                                 
-orafce usage                             No
+- Version code2pg: 0.11.2
+- Analysis date: 07/08/2018
+- Source code directory: /home/user/migration-project/
+- Number of .java files: 76
+- Language: java
+- Number of analyzed LOC: 0
+- Log file: 
+- orafce usage: No
 
-.---------------------------------------------------------------------------------------------------------------.
-|                             | Number of instructions | Time/instruction | Estimated time (minutes) | Man-days |
-+-----------------------------+------------------------+------------------+--------------------------+----------+
-| Level 1                     |                     52 |                1 |                       52 |     0.14 |
-| Level 2                     |                    106 |                4 |                      424 |     1.18 |
-| Level 3                     |                    118 |                8 |                      944 |     2.62 |
-| Level 4                     |                      2 |               16 |                       32 |     0.09 |
-+-----------------------------+------------------------+------------------+--------------------------+----------+
-| Application code estimation |                    278 |             5.22 |                     1452 |     4.03 |
-'-----------------------------+------------------------+------------------+--------------------------+----------'
+Estimates
+=========
 
-.--------------------------------------.
-| Level | Instruction         | Number |
-+-------+---------------------+--------+
-|     1 | DELETE_WITHOUT_FROM |     17 |
-|     1 | DUAL                |      6 |
-|     1 | MAX                 |      6 |
-|     1 | UPPER               |      2 |
-|     1 | USER                |     21 |
-+-------+---------------------+--------+
-|     2 | COMMIT              |      1 |
-|     2 | NVL                 |     28 |
-|     2 | ROLLBACK            |      1 |
-|     2 | SYSDATE             |      4 |
-|     2 | TO_DATE             |     72 |
-+-------+---------------------+--------+
-|     3 | FIRST               |     26 |
-|     3 | LAST                |      5 |
-|     3 | TO_CHAR             |     87 |
-+-------+---------------------+--------+
-|     4 | UID                 |      2 |
-'-------+---------------------+--------'
+|            | Number of instructions | Time/instruction | Estimated time (minutes) | Man-days |
+|------------|------------------------|------------------|--------------------------|----------|
+| Level 1    |                    265 |                1 |                      265 |      0.7 |
+| Level 2    |                     27 |                4 |                      108 |      0.3 |
+| Level 3    |                     26 |                8 |                      208 |      0.6 |
+| Level 4    |                    140 |               20 |                     2800 |      7.8 |
+| estimation |                    458 |              7.4 |                     3381 |      9.4 |
+
+Instructions
+============
+
+| Level | Instruction          | Number |
+|-------|----------------------|--------|
+|     1 |                ASCII |     60 |
+|     1 |                COUNT |     11 |
+|     1 |                LOWER |    178 |
+|     1 |                  MAX |      4 |
+|     1 |                  MIN |      9 |
+|     1 |                UPPER |      3 |
+|     2 |                  NVL |      8 |
+|     2 |                  SUM |     17 |
+|     2 |            TO_NUMBER |      2 |
+|     3 |                 CAST |      1 |
+|     3 |               DECODE |     20 |
+|     3 |                HINTS |      4 |
+|     3 |               ROWNUM |      1 |
+|     4 |              CONVERT |    140 |
 ```
 
 - html output: 
