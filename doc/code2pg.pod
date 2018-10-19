@@ -132,10 +132,10 @@ Specifies in which directory the report will be saved.
 
 =item B<--rdbms> string
 
-Migration will be from the specified RDBMS to PostgreSQL. So far, only 
-Oracle is supported. 
+Migration will be from the specified RDBMS to PostgreSQL. So far, 
+Oracle and DB2 instructions are supported. 
 
-rdbms = [oracle]
+rdbms = [oracle|db2]
 
 =item B<-r> , B<--orafce>
 
