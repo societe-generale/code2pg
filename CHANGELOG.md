@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.12.0 (19/10/2018)
+
+- First DB2 instructions. All instructions are considered at level3. This can give vastly wrong estimates but will be tuned later on.
+- DB2 functionnality is considered alpha.
+
 ## 0.11.2 (03/08/2018)
 
 - The module `Text::ASCIITable` is no longer needed. The text output is now markdown compatible.
