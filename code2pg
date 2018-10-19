@@ -2,7 +2,7 @@
 
 ################################################################################
 #
-# code2pg v0.11.2 - code migration estimation from Oracle to PostgreSQL
+# code2pg v0.11.3 - code migration estimation from Oracle to PostgreSQL
 #
 # Author: Anthony Nowocien anthony.nowocien@socgen.com
 # Copyright 2018 Société Générale
@@ -42,9 +42,9 @@ use strict;
 use warnings;
 use Getopt::Long qw(:config no_ignore_case bundling);
 use File::Find::Rule;
-use File::Slurp;
 use List::MoreUtils;
 use Config::General;
+# use File::Slurp;
 
 ################################################################################
 # User variables
@@ -79,7 +79,7 @@ my %REGEX_AFTER = (
 ################################################################################
 # Internal variables and constants
 
-our $VERSION                = "0.11.2"; # this script version number
+our $VERSION                = "0.11.3"; # this script version number
 my  $CONFIG_FILE            = "";       # use of a config file
 my  $DEBUG                  = "";       # enable some debugging output
 my  $DIRECTORY              = "";       # the directory to analyze
@@ -113,7 +113,7 @@ my  $USERNAME               = "";       # username for svn access
 my  $chosen_language        = "";
 my  $chosen_rdbms           = "oracle"; # the source rdbms instructions
 my  $csv_file_output        = "";       # the csv file to log instructions
-my  @dir_to_analyze         = (".");    # default directories to analyze
+my  @dir_to_analyze         = (".");    # directories to analyze
 my  $directory_output       = ".";
 my  $directory_type         = "file";   # we analyze local files by default
 my  @extensions_to_analyze  = ("*");    # which extensions to analyze
@@ -133,6 +133,16 @@ my %oracle_functions_list_1;
 my %oracle_functions_list_2;
 my %oracle_functions_list_3;
 my %oracle_functions_list_4;
+
+my %db2_functions_list_1;
+my %db2_functions_list_2;
+my %db2_functions_list_3;
+my %db2_functions_list_4;
+
+my %sqlsrv_functions_list_1;
+my %sqlsrv_functions_list_2;
+my %sqlsrv_functions_list_3;
+my %sqlsrv_functions_list_4;
 
 # ORA_FUNC_1 - each keyword will be matched with a corresponding regex - level 1
 $oracle_functions_list_1{'ABS'}{'regex'}                 = '\bABS\s*\(';
@@ -452,8 +462,7 @@ $oracle_functions_list_1{'ATAN2'}{'comments'} = q{Beware of implicit conversions
 $oracle_functions_list_1{'AVG'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions019.htm';
 $oracle_functions_list_1{'AVG'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/tutorial-agg.html';
 $oracle_functions_list_1{'AVG'}{'pginstruction'} = 'avg';
-$oracle_functions_list_1{'AVG'}{'comments'} = q{Beware of implicit conversions. 
-Beware of AVG(...) OVER expression};
+$oracle_functions_list_1{'AVG'}{'comments'} = q{Beware of implicit conversions. Beware of AVG(...) OVER expression};
 $oracle_functions_list_1{'BETWEEN'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/conditions012.htm';
 $oracle_functions_list_1{'BETWEEN'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-comparison.html';
 $oracle_functions_list_1{'BETWEEN'}{'pginstruction'} = 'between';
@@ -802,8 +811,7 @@ $oracle_functions_list_4{'MAKE_REF'}{'comments'} = q{};
 $oracle_functions_list_1{'MAX'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions110.htm';
 $oracle_functions_list_1{'MAX'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/tutorial-agg.html';
 $oracle_functions_list_1{'MAX'}{'pginstruction'} = 'max';
-$oracle_functions_list_1{'MAX'}{'comments'} = q{Beware of implicit conversions. 
-Beware of COUNT(...) OVER expression};
+$oracle_functions_list_1{'MAX'}{'comments'} = q{Beware of implicit conversions. Beware of COUNT(...) OVER expression};
 $oracle_functions_list_4{'MEDIAN'}{'sourcedocumentation'} = 'http://docs.oracle.com/cd/E11882_01/server.112/e41084/functions099.htm';
 $oracle_functions_list_4{'MEDIAN'}{'pgdocumentation'} = '';
 $oracle_functions_list_4{'MEDIAN'}{'pginstruction'} = 'No equivalent';
@@ -815,8 +823,7 @@ $oracle_functions_list_4{'MERGE'}{'comments'} = q{};
 $oracle_functions_list_1{'MIN'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions112.htm';
 $oracle_functions_list_1{'MIN'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/tutorial-agg.html';
 $oracle_functions_list_1{'MIN'}{'pginstruction'} = 'min';
-$oracle_functions_list_1{'MIN'}{'comments'} = q{Beware of implicit conversions. 
-Beware of MIN(...) OVER expression};
+$oracle_functions_list_1{'MIN'}{'comments'} = q{Beware of implicit conversions. Beware of MIN(...) OVER expression};
 $oracle_functions_list_1{'MINUS'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/queries004.htm';
 $oracle_functions_list_1{'MINUS'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/sql-select.html';
 $oracle_functions_list_1{'MINUS'}{'pginstruction'} = 'EXCEPT';
@@ -1237,7 +1244,7 @@ $oracle_functions_list_4{'TO_CLOB'}{'comments'} = q{};
 $oracle_functions_list_2{'TO_DATE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions219.htm';
 $oracle_functions_list_2{'TO_DATE'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-formatting.html';
 $oracle_functions_list_2{'TO_DATE'}{'pginstruction'} = 'to_date';
-$oracle_functions_list_2{'TO_DATE'}{'comments'} = q{The PostgreSQL function does not handle the fmt and nlsparam parameters.};
+$oracle_functions_list_2{'TO_DATE'}{'comments'} = q{The PostgreSQL function does not handle nlsparam parameter.};
 $oracle_functions_list_4{'TO_DSINTERVAL'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions220.htm';
 $oracle_functions_list_4{'TO_DSINTERVAL'}{'pgdocumentation'} = '';
 $oracle_functions_list_4{'TO_DSINTERVAL'}{'pginstruction'} = '';
@@ -1269,7 +1276,7 @@ $oracle_functions_list_4{'TO_SINGLE_BYTE'}{'comments'} = q{};
 $oracle_functions_list_2{'TO_TIMESTAMP'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/122/SQLRF/TO_TIMESTAMP.htm';
 $oracle_functions_list_2{'TO_TIMESTAMP'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-formatting.html';
 $oracle_functions_list_2{'TO_TIMESTAMP'}{'pginstruction'} = 'to_timestamp';
-$oracle_functions_list_2{'TO_TIMESTAMP'}{'comments'} = q{The PostgreSQL function does not handle the fmt and nlsparam parameters. Beware of implicit conversions.};
+$oracle_functions_list_2{'TO_TIMESTAMP'}{'comments'} = q{The PostgreSQL function does not handle the nlsparam parameter. Beware of implicit conversions.};
 $oracle_functions_list_2{'TO_TIMESTAMP_TZ'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions230.htm';
 $oracle_functions_list_2{'TO_TIMESTAMP_TZ'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-formatting.html';
 $oracle_functions_list_2{'TO_TIMESTAMP_TZ'}{'pginstruction'} = 'to_timestamp';
@@ -1414,6 +1421,317 @@ $oracle_functions_list_2{'XMLTYPE'}{'sourcedocumentation'} = '';
 $oracle_functions_list_2{'XMLTYPE'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/datatype-xml.html';
 $oracle_functions_list_2{'XMLTYPE'}{'pginstruction'} = 'xml';
 $oracle_functions_list_2{'XMLTYPE'}{'comments'} = q{Oracle's `XMLTYPE` is equivalent to PostgreSQL xml type. Its use is dependant on libxml (can be checked with pg_config). Should be the case on all Redhat like systems.};
+
+# DB2_FUNC_1 - each keyword will be matched with a corresponding regex - level 1
+
+# DB2_FUNC_2 - each keyword will be matched with a corresponding regex - level 2
+
+# DB2_FUNC_3 - each keyword will be matched with a corresponding regex - level 3
+$db2_functions_list_3{'ARRAY_AGG'}{'regex'} = '\bARRAY_AGG\s*\(';
+$db2_functions_list_3{'ABS'}{'regex'} = '\bABS\s*\(';
+$db2_functions_list_3{'ABSVAL'}{'regex'} = '\bABSVAL\s*\(';
+$db2_functions_list_3{'ACOS'}{'regex'} = '\bACOS\s*\(';
+$db2_functions_list_3{'ADD_DAYS'}{'regex'} = '\bADD_DAYS\s*\(';
+$db2_functions_list_3{'ADD_HOURS'}{'regex'} = '\bADD_HOURS\s*\(';
+$db2_functions_list_3{'ADD_MINUTES'}{'regex'} = '\bADD_MINUTES\s*\(';
+$db2_functions_list_3{'ADD_MONTHS'}{'regex'} = '\bADD_MONTHS\s*\(';
+$db2_functions_list_3{'ADD_SECONDS'}{'regex'} = '\bADD_SECONDS\s*\(';
+$db2_functions_list_3{'ADD_YEARS'}{'regex'} = '\bADD_YEARS\s*\(';
+$db2_functions_list_3{'AGE'}{'regex'} = '\bAGE\s*\(';
+$db2_functions_list_3{'ARRAY_AGG'}{'regex'} = '\bARRAY_AGG\s*\(';
+$db2_functions_list_3{'ARRAY_DELETE'}{'regex'} = '\bARRAY_DELETE\s*\(';
+$db2_functions_list_3{'ARRAY_FIRST'}{'regex'} = '\bARRAY_FIRST\s*\(';
+$db2_functions_list_3{'ARRAY_LAST'}{'regex'} = '\bARRAY_LAST\s*\(';
+$db2_functions_list_3{'ARRAY_NEXT'}{'regex'} = '\bARRAY_NEXT\s*\(';
+$db2_functions_list_3{'ARRAY_PRIOR'}{'regex'} = '\bARRAY_PRIOR\s*\(';
+$db2_functions_list_3{'ASCII'}{'regex'} = '\bASCII\s*\(';
+$db2_functions_list_3{'ASIN'}{'regex'} = '\bASIN\s*\(';
+$db2_functions_list_3{'ATAN'}{'regex'} = '\bATAN\s*\(';
+$db2_functions_list_3{'ATAN2'}{'regex'} = '\bATAN2\s*\(';
+$db2_functions_list_3{'ATANH'}{'regex'} = '\bATANH\s*\(';
+$db2_functions_list_3{'AVG'}{'regex'} = '\bAVG\s*\(';
+$db2_functions_list_3{'BASE_TABL'}{'regex'} ='\bEBASE_TABL\s*\(';
+$db2_functions_list_3{'BIGINT'}{'regex'} = '\bBIGINT\s*\(';
+$db2_functions_list_3{'BINARY'}{'regex'} = '\bBINARY\s*\(';
+$db2_functions_list_3{'BITAN'}{'regex'} ='\bDBITAN\s*\(';
+$db2_functions_list_3{'BITANDNO'}{'regex'} ='\bTBITANDNO\s*\(';
+$db2_functions_list_3{'BITO'}{'regex'} ='\bRBITO\s*\(';
+$db2_functions_list_3{'BITXO'}{'regex'} ='\bRBITXO\s*\(';
+$db2_functions_list_3{'BITNO'}{'regex'} ='\bTBITNO\s*\(';
+$db2_functions_list_3{'BLOB'}{'regex'} = '\bBLOB\s*\(';
+$db2_functions_list_3{'BTRIM'}{'regex'} = '\bBTRIM\s*\(';
+$db2_functions_list_3{'CARDINALITY'}{'regex'} = '\bCARDINALITY\s*\(';
+$db2_functions_list_3{'CEILIN'}{'regex'} ='\bGCEILIN\s*\(';
+$db2_functions_list_3{'CEIL'}{'regex'} = '\bCEIL\s*\(';
+$db2_functions_list_3{'CHAR'}{'regex'} = '\bCHAR\s*\(';
+$db2_functions_list_3{'CHARACTER_LENGTH'}{'regex'} = '\bCHARACTER_LENGTH\s*\(';
+$db2_functions_list_3{'CHR'}{'regex'} = '\bCHR\s*\(';
+$db2_functions_list_3{'CLOB'}{'regex'} = '\bCLOB\s*\(';
+$db2_functions_list_3{'COALESCE'}{'regex'} = '\bCOALESCE\s*\(';
+$db2_functions_list_3{'COLLATION_KEY'}{'regex'} = '\bCOLLATION_KEY\s*\(';
+$db2_functions_list_3{'COLLATION_KEY_BIT'}{'regex'} = '\bCOLLATION_KEY_BIT\s*\(';
+$db2_functions_list_3{'COMPARE_DECFLOAT'}{'regex'} = '\bCOMPARE_DECFLOAT\s*\(';
+$db2_functions_list_3{'CONCAT'}{'regex'} = '\bCONCAT\s*\(';
+$db2_functions_list_3{'CORRELATION'}{'regex'} = '\bCORRELATION\s*\(';
+$db2_functions_list_3{'COS'}{'regex'} = '\bCOS\s*\(';
+$db2_functions_list_3{'COSH'}{'regex'} = '\bCOSH\s*\(';
+$db2_functions_list_3{'COT'}{'regex'} = '\bCOT\s*\(';
+$db2_functions_list_3{'COUNT'}{'regex'} = '\bCOUNT\s*\(';
+$db2_functions_list_3{'COUNT_BIG'}{'regex'} = '\bCOUNT_BIG\s*\(';
+$db2_functions_list_3{'COVARIANCE'}{'regex'} = '\bCOVARIANCE\s*\(';
+$db2_functions_list_3{'COVARIANCE_SAMP'}{'regex'} = '\bCOVARIANCE_SAMP\s*\(';
+$db2_functions_list_3{'CUME_DIST'}{'regex'} = '\bCUME_DIST\s*\(';
+$db2_functions_list_3{'CURSOR_ROWCOUNT'}{'regex'} = '\bCURSOR_ROWCOUNT\s*\(';
+$db2_functions_list_3{'DATAPARTITIONNUM'}{'regex'} = '\bDATAPARTITIONNUM\s*\(';
+$db2_functions_list_3{'DATE'}{'regex'} = '\bDATE\s*\(';
+$db2_functions_list_3{'DATE_PART'}{'regex'} = '\bDATE_PART\s*\(';
+$db2_functions_list_3{'DATE_TRUNC'}{'regex'} = '\bDATE_TRUNC\s*\(';
+$db2_functions_list_3{'DAY'}{'regex'} = '\bDAY\s*\(';
+$db2_functions_list_3{'DAYNAME'}{'regex'} = '\bDAYNAME\s*\(';
+$db2_functions_list_3{'DAYOFMONTH'}{'regex'} = '\bDAYOFMONTH\s*\(';
+$db2_functions_list_3{'DAYOFWEEK'}{'regex'} = '\bDAYOFWEEK\s*\(';
+$db2_functions_list_3{'DAYOFWEEK_ISO'}{'regex'} = '\bDAYOFWEEK_ISO\s*\(';
+$db2_functions_list_3{'DAYOFYEAR'}{'regex'} = '\bDAYOFYEAR\s*\(';
+$db2_functions_list_3{'DAYS'}{'regex'} = '\bDAYS\s*\(';
+$db2_functions_list_3{'DAYS_BETWEEN'}{'regex'} = '\bDAYS_BETWEEN\s*\(';
+$db2_functions_list_3{'DAYS_TO_END_OF_MONTH'}{'regex'} = '\bDAYS_TO_END_OF_MONTH\s*\(';
+$db2_functions_list_3{'DBCLOB'}{'regex'} = '\bDBCLOB\s*\(';
+$db2_functions_list_3{'DBPARTITIONNUM'}{'regex'} = '\bDBPARTITIONNUM\s*\(';
+$db2_functions_list_3{'DECFLOAT'}{'regex'} = '\bDECFLOAT\s*\(';
+$db2_functions_list_3{'DECFLOAT_FORMAT'}{'regex'} = '\bDECFLOAT_FORMAT\s*\(';
+$db2_functions_list_3{'DECIMA'}{'regex'} ='\bLDECIMA\s*\(';
+$db2_functions_list_3{'DEC'}{'regex'} = '\bDEC\s*\(';
+$db2_functions_list_3{'DECODE'}{'regex'} = '\bDECODE\s*\(';
+$db2_functions_list_3{'DECRYPT_BI'}{'regex'} ='\bNDECRYPT_BI\s*\(';
+$db2_functions_list_3{'DECRYPT_CHA'}{'regex'} ='\bRDECRYPT_CHA\s*\(';
+$db2_functions_list_3{'DEGREES'}{'regex'} = '\bDEGREES\s*\(';
+$db2_functions_list_3{'DEREF'}{'regex'} = '\bDEREF\s*\(';
+$db2_functions_list_3{'DIFFERENCE'}{'regex'} = '\bDIFFERENCE\s*\(';
+$db2_functions_list_3{'DIGITS'}{'regex'} = '\bDIGITS\s*\(';
+$db2_functions_list_3{'DOUBLE_PRECISIO'}{'regex'} ='\bNDOUBLE_PRECISIO\s*\(';
+$db2_functions_list_3{'DOUBLE'}{'regex'} = '\bDOUBLE\s*\(';
+$db2_functions_list_3{'EMPTY_BLO'}{'regex'} ='\bBEMPTY_BLO\s*\(';
+$db2_functions_list_3{'EMPTY_CLO'}{'regex'} ='\bBEMPTY_CLO\s*\(';
+$db2_functions_list_3{'EMPTY_DBCLO'}{'regex'} ='\bBEMPTY_DBCLO\s*\(';
+$db2_functions_list_3{'EMPTY_NCLO'}{'regex'} ='\bBEMPTY_NCLO\s*\(';
+$db2_functions_list_3{'ENCRYPT'}{'regex'} = '\bENCRYPT\s*\(';
+$db2_functions_list_3{'EVENT_MON_STATE'}{'regex'} = '\bEVENT_MON_STATE\s*\(';
+$db2_functions_list_3{'EXP'}{'regex'} = '\bEXP\s*\(';
+$db2_functions_list_3{'EXTRACT'}{'regex'} = '\bEXTRACT\s*\(';
+$db2_functions_list_3{'FIRST_DAY'}{'regex'} = '\bFIRST_DAY\s*\(';
+$db2_functions_list_3{'FLOAT'}{'regex'} = '\bFLOAT\s*\(';
+$db2_functions_list_3{'FLOOR'}{'regex'} = '\bFLOOR\s*\(';
+$db2_functions_list_3{'FROM_UTC_TIMESTAMP'}{'regex'} = '\bFROM_UTC_TIMESTAMP\s*\(';
+$db2_functions_list_3{'GENERATE_UNIQUE'}{'regex'} = '\bGENERATE_UNIQUE\s*\(';
+$db2_functions_list_3{'GETHINT'}{'regex'} = '\bGETHINT\s*\(';
+$db2_functions_list_3{'GRAPHIC'}{'regex'} = '\bGRAPHIC\s*\(';
+$db2_functions_list_3{'GREATEST'}{'regex'} = '\bGREATEST\s*\(';
+$db2_functions_list_3{'GROUPING'}{'regex'} = '\bGROUPING\s*\(';
+$db2_functions_list_3{'HASH'}{'regex'} = '\bHASH\s*\(';
+$db2_functions_list_3{'HASH4'}{'regex'} = '\bHASH4\s*\(';
+$db2_functions_list_3{'HASH8'}{'regex'} = '\bHASH8\s*\(';
+$db2_functions_list_3{'HASHEDVALUE'}{'regex'} = '\bHASHEDVALUE\s*\(';
+$db2_functions_list_3{'HEX'}{'regex'} = '\bHEX\s*\(';
+$db2_functions_list_3{'HOUR'}{'regex'} = '\bHOUR\s*\(';
+$db2_functions_list_3{'HOURS_BETWEEN'}{'regex'} = '\bHOURS_BETWEEN\s*\(';
+$db2_functions_list_3{'IDENTITY_VAL_LOCAL'}{'regex'} = '\bIDENTITY_VAL_LOCAL\s*\(';
+$db2_functions_list_3{'INITCAP'}{'regex'} = '\bINITCAP\s*\(';
+$db2_functions_list_3{'INSERT'}{'regex'} = '\bINSERT\s*\(';
+$db2_functions_list_3{'INSTR'}{'regex'} = '\bINSTR\s*\(';
+$db2_functions_list_3{'INSTRB'}{'regex'} = '\bINSTRB\s*\(';
+$db2_functions_list_3{'INT'}{'regex'} = '\bINT\s*\(';
+$db2_functions_list_3{'INTEGER'}{'regex'} = '\bINTEGER\s*\(';
+$db2_functions_list_3{'INTNAN'}{'regex'} ='\bDINTNAN\s*\(';
+$db2_functions_list_3{'INTNO'}{'regex'} ='\bRINTNO\s*\(';
+$db2_functions_list_3{'INTNXO'}{'regex'} ='\bRINTNXO\s*\(';
+$db2_functions_list_3{'INTNNO'}{'regex'} ='\bTINTNNO\s*\(';
+$db2_functions_list_3{'JULIAN_DAY'}{'regex'} = '\bJULIAN_DAY\s*\(';
+$db2_functions_list_3{'LAST_DAY'}{'regex'} = '\bLAST_DAY\s*\(';
+$db2_functions_list_3{'LCAS'}{'regex'} ='\bELCAS\s*\(';
+$db2_functions_list_3{'LEAST'}{'regex'} = '\bLEAST\s*\(';
+$db2_functions_list_3{'LEFT'}{'regex'} = '\bLEFT\s*\(';
+$db2_functions_list_3{'LENGTH'}{'regex'} = '\bLENGTH\s*\(';
+$db2_functions_list_3{'LISTAGG'}{'regex'} = '\bLISTAGG\s*\(';
+$db2_functions_list_3{'LN'}{'regex'} = '\bLN\s*\(';
+$db2_functions_list_3{'LOCATE'}{'regex'} = '\bLOCATE\s*\(';
+$db2_functions_list_3{'LOCATE_IN_STRING'}{'regex'} = '\bLOCATE_IN_STRING\s*\(';
+$db2_functions_list_3{'LOG10'}{'regex'} = '\bLOG10\s*\(';
+$db2_functions_list_3{'LOWER'}{'regex'} = '\bLOWER\s*\(';
+$db2_functions_list_3{'LPAD'}{'regex'} = '\bLPAD\s*\(';
+$db2_functions_list_3{'LTRIM'}{'regex'} = '\bLTRIM\s*\(';
+$db2_functions_list_3{'MAX'}{'regex'} = '\bMAX\s*\(';
+$db2_functions_list_3{'MAX_CARDINALITY'}{'regex'} = '\bMAX_CARDINALITY\s*\(';
+$db2_functions_list_3{'MEDIAN'}{'regex'} = '\bMEDIAN\s*\(';
+$db2_functions_list_3{'MICROSECOND'}{'regex'} = '\bMICROSECOND\s*\(';
+$db2_functions_list_3{'MIDNIGHT_SECONDS'}{'regex'} = '\bMIDNIGHT_SECONDS\s*\(';
+$db2_functions_list_3{'MIN'}{'regex'} = '\bMIN\s*\(';
+$db2_functions_list_3{'MINUTE'}{'regex'} = '\bMINUTE\s*\(';
+$db2_functions_list_3{'MINUTES_BETWEEN'}{'regex'} = '\bMINUTES_BETWEEN\s*\(';
+$db2_functions_list_3{'MOD'}{'regex'} = '\bMOD\s*\(';
+$db2_functions_list_3{'MONTH'}{'regex'} = '\bMONTH\s*\(';
+$db2_functions_list_3{'MONTHNAME'}{'regex'} = '\bMONTHNAME\s*\(';
+$db2_functions_list_3{'MONTHS_BETWEEN'}{'regex'} = '\bMONTHS_BETWEEN\s*\(';
+$db2_functions_list_3{'MULTIPLY_ALT'}{'regex'} = '\bMULTIPLY_ALT\s*\(';
+$db2_functions_list_3{'NCHAR'}{'regex'} = '\bNCHAR\s*\(';
+$db2_functions_list_3{'NCLOB'}{'regex'} = '\bNCLOB\s*\(';
+$db2_functions_list_3{'NEXT_DAY'}{'regex'} = '\bNEXT_DAY\s*\(';
+$db2_functions_list_3{'NEXT_MONTH'}{'regex'} = '\bNEXT_MONTH\s*\(';
+$db2_functions_list_3{'NEXT_QUARTER'}{'regex'} = '\bNEXT_QUARTER\s*\(';
+$db2_functions_list_3{'NEXT_WEEK'}{'regex'} = '\bNEXT_WEEK\s*\(';
+$db2_functions_list_3{'NEXT_YEAR'}{'regex'} = '\bNEXT_YEAR\s*\(';
+$db2_functions_list_3{'NORMALIZE_DECFLOAT'}{'regex'} = '\bNORMALIZE_DECFLOAT\s*\(';
+$db2_functions_list_3{'NOW'}{'regex'} = '\bNOW\s*\(';
+$db2_functions_list_3{'NULLIF'}{'regex'} = '\bNULLIF\s*\(';
+$db2_functions_list_3{'NVARCHAR'}{'regex'} = '\bNVARCHAR\s*\(';
+$db2_functions_list_3{'NVL'}{'regex'} = '\bNVL\s*\(';
+$db2_functions_list_3{'OCTET_LENGTH'}{'regex'} = '\bOCTET_LENGTH\s*\(';
+$db2_functions_list_3{'OVERLAY'}{'regex'} = '\bOVERLAY\s*\(';
+$db2_functions_list_3{'PARAMETER'}{'regex'} = '\bPARAMETER\s*\(';
+$db2_functions_list_3{'PERCENT_RANK'}{'regex'} = '\bPERCENT_RANK\s*\(';
+$db2_functions_list_3{'PERCENTILE_CONT'}{'regex'} = '\bPERCENTILE_CONT\s*\(';
+$db2_functions_list_3{'PERCENTILE_DISC'}{'regex'} = '\bPERCENTILE_DISC\s*\(';
+$db2_functions_list_3{'POSITION'}{'regex'} = '\bPOSITION\s*\(';
+$db2_functions_list_3{'POSSTR'}{'regex'} = '\bPOSSTR\s*\(';
+$db2_functions_list_3{'POW'}{'regex'} = '\bPOW\s*\(';
+$db2_functions_list_3{'POWER'}{'regex'} = '\bPOWER\s*\(';
+$db2_functions_list_3{'QUANTIZE'}{'regex'} = '\bQUANTIZE\s*\(';
+$db2_functions_list_3{'QUARTER'}{'regex'} = '\bQUARTER\s*\(';
+$db2_functions_list_3{'RADIANS'}{'regex'} = '\bRADIANS\s*\(';
+$db2_functions_list_3{'RAISE_ERROR'}{'regex'} = '\bRAISE_ERROR\s*\(';
+$db2_functions_list_3{'RAN'}{'regex'} ='\bDRAN\s*\(';
+$db2_functions_list_3{'RANDOM'}{'regex'} = '\bRANDOM\s*\(';
+$db2_functions_list_3{'RAWTOHEX'}{'regex'} = '\bRAWTOHEX\s*\(';
+$db2_functions_list_3{'REAL'}{'regex'} = '\bREAL\s*\(';
+$db2_functions_list_3{'REC2XML'}{'regex'} = '\bREC2XML\s*\(';
+$db2_functions_list_3{'REGEXP_COUNT'}{'regex'} = '\bREGEXP_COUNT\s*\(';
+$db2_functions_list_3{'REGEXP_EXTRACT'}{'regex'} = '\bREGEXP_EXTRACT\s*\(';
+$db2_functions_list_3{'REGEXP_INSTR'}{'regex'} = '\bREGEXP_INSTR\s*\(';
+$db2_functions_list_3{'REGEXP_LIKE'}{'regex'} = '\bREGEXP_LIKE\s*\(';
+$db2_functions_list_3{'REGEXP_MATCH_COUNT'}{'regex'} = '\bREGEXP_MATCH_COUNT\s*\(';
+$db2_functions_list_3{'REGEXP_REPLACE'}{'regex'} = '\bREGEXP_REPLACE\s*\(';
+$db2_functions_list_3{'REGEXP_SUBSTR'}{'regex'} = '\bREGEXP_SUBSTR\s*\(';
+$db2_functions_list_3{'REGR_AVG'}{'regex'} ='\bXREGR_AVG\s*\(';
+$db2_functions_list_3{'REGR_AVG'}{'regex'} ='\bYREGR_AVG\s*\(';
+$db2_functions_list_3{'REGR_COUN'}{'regex'} ='\bTREGR_COUN\s*\(';
+$db2_functions_list_3{'REGR_INTERCEP'}{'regex'} ='\bTREGR_INTERCEP\s*\(';
+$db2_functions_list_3{'REGR_ICP'}{'regex'} ='\bTREGR_ICP\s*\(';
+$db2_functions_list_3{'REGR_R'}{'regex'} ='\b2REGR_R\s*\(';
+$db2_functions_list_3{'REGR_SLOP'}{'regex'} ='\bEREGR_SLOP\s*\(';
+$db2_functions_list_3{'REGR_SX'}{'regex'} ='\bXREGR_SX\s*\(';
+$db2_functions_list_3{'REGR_SX'}{'regex'} ='\bYREGR_SX\s*\(';
+$db2_functions_list_3{'REGR_SY'}{'regex'} ='\bYREGR_SY\s*\(';
+$db2_functions_list_3{'REPEAT'}{'regex'} ='\bTREPEAT\s*\(';
+$db2_functions_list_3{'REPLACE'}{'regex'} ='\bEREPLACE\s*\(';
+$db2_functions_list_3{'RID'}{'regex'} ='\bDRI\s*\(';
+$db2_functions_list_3{'RID_BIT'}{'regex'} ='\bTRID_BI\s*\(';
+$db2_functions_list_3{'RIGHT'}{'regex'} = '\bRIGHT\s*\(';
+$db2_functions_list_3{'ROUND'}{'regex'} = '\bROUND\s*\(';
+$db2_functions_list_3{'ROUND'}{'regex'} = '\bROUND\s*\(';
+$db2_functions_list_3{'ROUND_TIMESTAMP'}{'regex'} = '\bROUND_TIMESTAMP\s*\(';
+$db2_functions_list_3{'RPAD'}{'regex'} = '\bRPAD\s*\(';
+$db2_functions_list_3{'RTRIM'}{'regex'} = '\bRTRIM\s*\(';
+$db2_functions_list_3{'SECLABEL'}{'regex'} = '\bSECLABEL\s*\(';
+$db2_functions_list_3{'SECLABEL_BY_NAME'}{'regex'} = '\bSECLABEL_BY_NAME\s*\(';
+$db2_functions_list_3{'SECLABEL_TO_CHAR'}{'regex'} = '\bSECLABEL_TO_CHAR\s*\(';
+$db2_functions_list_3{'SECOND'}{'regex'} = '\bSECOND\s*\(';
+$db2_functions_list_3{'SECONDS_BETWEEN'}{'regex'} = '\bSECONDS_BETWEEN\s*\(';
+$db2_functions_list_3{'SIGN'}{'regex'} = '\bSIGN\s*\(';
+$db2_functions_list_3{'SIN'}{'regex'} = '\bSIN\s*\(';
+$db2_functions_list_3{'SINH'}{'regex'} = '\bSINH\s*\(';
+$db2_functions_list_3{'SMALLINT'}{'regex'} = '\bSMALLINT\s*\(';
+$db2_functions_list_3{'SOUNDEX'}{'regex'} = '\bSOUNDEX\s*\(';
+$db2_functions_list_3{'SPACE'}{'regex'} = '\bSPACE\s*\(';
+$db2_functions_list_3{'SQRT'}{'regex'} = '\bSQRT\s*\(';
+$db2_functions_list_3{'STDDEV'}{'regex'} = '\bSTDDEV\s*\(';
+$db2_functions_list_3{'STDDEV_SAMP'}{'regex'} = '\bSTDDEV_SAMP\s*\(';
+$db2_functions_list_3{'STRIP'}{'regex'} = '\bSTRIP\s*\(';
+$db2_functions_list_3{'STRLEFT'}{'regex'} = '\bSTRLEFT\s*\(';
+$db2_functions_list_3{'STRPOS'}{'regex'} = '\bSTRPOS\s*\(';
+$db2_functions_list_3{'STRRIGHT'}{'regex'} = '\bSTRRIGHT\s*\(';
+$db2_functions_list_3{'SUBSTR'}{'regex'} = '\bSUBSTR\s*\(';
+$db2_functions_list_3{'SUBSTRB'}{'regex'} = '\bSUBSTRB\s*\(';
+$db2_functions_list_3{'SUBSTRING'}{'regex'} = '\bSUBSTRING\s*\(';
+$db2_functions_list_3{'SUM'}{'regex'} = '\bSUM\s*\(';
+$db2_functions_list_3{'TABLE_NAME'}{'regex'} = '\bTABLE_NAME\s*\(';
+$db2_functions_list_3{'TABLE_SCHEMA'}{'regex'} = '\bTABLE_SCHEMA\s*\(';
+$db2_functions_list_3{'TAN'}{'regex'} = '\bTAN\s*\(';
+$db2_functions_list_3{'TANH'}{'regex'} = '\bTANH\s*\(';
+$db2_functions_list_3{'THIS_MONTH'}{'regex'} = '\bTHIS_MONTH\s*\(';
+$db2_functions_list_3{'THIS_QUARTER'}{'regex'} = '\bTHIS_QUARTER\s*\(';
+$db2_functions_list_3{'THIS_WEEK'}{'regex'} = '\bTHIS_WEEK\s*\(';
+$db2_functions_list_3{'THIS_YEAR'}{'regex'} = '\bTHIS_YEAR\s*\(';
+$db2_functions_list_3{'TIME'}{'regex'} = '\bTIME\s*\(';
+$db2_functions_list_3{'TIMESTAMP'}{'regex'} = '\bTIMESTAMP\s*\(';
+$db2_functions_list_3{'TIMESTAMP_FORMAT'}{'regex'} = '\bTIMESTAMP_FORMAT\s*\(';
+$db2_functions_list_3{'TIMESTAMP_ISO'}{'regex'} = '\bTIMESTAMP_ISO\s*\(';
+$db2_functions_list_3{'TIMESTAMPDIFF'}{'regex'} = '\bTIMESTAMPDIFF\s*\(';
+$db2_functions_list_3{'TO_CHAR'}{'regex'} = '\bTO_CHAR\s*\(';
+$db2_functions_list_3{'TO_CLOB'}{'regex'} = '\bTO_CLOB\s*\(';
+$db2_functions_list_3{'TO_DATE'}{'regex'} = '\bTO_DATE\s*\(';
+$db2_functions_list_3{'TO_HEX'}{'regex'} = '\bTO_HEX\s*\(';
+$db2_functions_list_3{'TO_NCHAR'}{'regex'} = '\bTO_NCHAR\s*\(';
+$db2_functions_list_3{'TO_NCLOB'}{'regex'} = '\bTO_NCLOB\s*\(';
+$db2_functions_list_3{'TO_NUMBER'}{'regex'} = '\bTO_NUMBER\s*\(';
+$db2_functions_list_3{'TO_SINGLE_BYTE'}{'regex'} = '\bTO_SINGLE_BYTE\s*\(';
+$db2_functions_list_3{'TO_TIMESTAMP'}{'regex'} = '\bTO_TIMESTAMP\s*\(';
+$db2_functions_list_3{'TO_UTC_TIMESTAMP'}{'regex'} = '\bTO_UTC_TIMESTAMP\s*\(';
+$db2_functions_list_3{'TOTALORDER'}{'regex'} = '\bTOTALORDER\s*\(';
+$db2_functions_list_3{'TRANSLATE'}{'regex'} = '\bTRANSLATE\s*\(';
+$db2_functions_list_3{'TRIM'}{'regex'} = '\bTRIM\s*\(';
+$db2_functions_list_3{'TRIM_ARRAY'}{'regex'} = '\bTRIM_ARRAY\s*\(';
+$db2_functions_list_3{'TRUNC_TIMESTAMP'}{'regex'} = '\bTRUNC_TIMESTAMP\s*\(';
+$db2_functions_list_3{'TRUNCATE'}{'regex'} = '\bTRUNCATE\s*\(';
+$db2_functions_list_3{'TYPE_ID'}{'regex'} = '\bTYPE_ID\s*\(';
+$db2_functions_list_3{'TYPE_NAME'}{'regex'} = '\bTYPE_NAME\s*\(';
+$db2_functions_list_3{'TYPE_SCHEMA'}{'regex'} = '\bTYPE_SCHEMA\s*\(';
+$db2_functions_list_3{'UCASE'}{'regex'} = '\bUCASE\s*\(';
+$db2_functions_list_3{'UNNES'}{'regex'} ='\bTUNNES\s*\(';
+$db2_functions_list_3{'UPPER'}{'regex'} = '\bUPPER\s*\(';
+$db2_functions_list_3{'VALUE'}{'regex'} = '\bVALUE\s*\(';
+$db2_functions_list_3{'VARBINARY'}{'regex'} = '\bVARBINARY\s*\(';
+$db2_functions_list_3{'VARCHAR'}{'regex'} = '\bVARCHAR\s*\(';
+$db2_functions_list_3{'VARCHAR_FORMAT'}{'regex'} = '\bVARCHAR_FORMAT\s*\(';
+$db2_functions_list_3{'VARGRAPHIC'}{'regex'} = '\bVARGRAPHIC\s*\(';
+$db2_functions_list_3{'VARIANCE'}{'regex'} = '\bVARIANCE\s*\(';
+$db2_functions_list_3{'VARIANCE_SAMP'}{'regex'} = '\bVARIANCE_SAMP\s*\(';
+$db2_functions_list_3{'VERIFY_GROUP_FOR_USER'}{'regex'} = '\bVERIFY_GROUP_FOR_USER\s*\(';
+$db2_functions_list_3{'VERIFY_ROLE_FOR_USER'}{'regex'} = '\bVERIFY_ROLE_FOR_USER\s*\(';
+$db2_functions_list_3{'VERIFY_TRUSTED_CONTEXT_ROLE_FOR_USER'}{'regex'} = '\bVERIFY_TRUSTED_CONTEXT_ROLE_FOR_USER\s*\(';
+$db2_functions_list_3{'WEEK'}{'regex'} = '\bWEEK\s*\(';
+$db2_functions_list_3{'WEEK_ISO'}{'regex'} = '\bWEEK_ISO\s*\(';
+$db2_functions_list_3{'WEEKS_BETWEEN'}{'regex'} = '\bWEEKS_BETWEEN\s*\(';
+$db2_functions_list_3{'WIDTH_BUCKET'}{'regex'} = '\bWIDTH_BUCKET\s*\(';
+$db2_functions_list_3{'XMLAGG'}{'regex'} = '\bXMLAGG\s*\(';
+$db2_functions_list_3{'XMLATTRIBUTES'}{'regex'} = '\bXMLATTRIBUTES\s*\(';
+$db2_functions_list_3{'XMLCOMMENT'}{'regex'} = '\bXMLCOMMENT\s*\(';
+$db2_functions_list_3{'XMLCONCAT'}{'regex'} = '\bXMLCONCAT\s*\(';
+$db2_functions_list_3{'XMLDOCUMENT'}{'regex'} = '\bXMLDOCUMENT\s*\(';
+$db2_functions_list_3{'XMLELEMENT'}{'regex'} = '\bXMLELEMENT\s*\(';
+$db2_functions_list_3{'XMLFOREST'}{'regex'} = '\bXMLFOREST\s*\(';
+$db2_functions_list_3{'XMLGROUP'}{'regex'} = '\bXMLGROUP\s*\(';
+$db2_functions_list_3{'XMLNAMESPACE'}{'regex'} ='\bSXMLNAMESPACE\s*\(';
+$db2_functions_list_3{'XMLPARSE'}{'regex'} = '\bXMLPARSE\s*\(';
+$db2_functions_list_3{'XMLPI'}{'regex'} = '\bXMLPI\s*\(';
+$db2_functions_list_3{'XMLQUERY'}{'regex'} = '\bXMLQUERY\s*\(';
+$db2_functions_list_3{'XMLROW'}{'regex'} = '\bXMLROW\s*\(';
+$db2_functions_list_3{'XMLSERIALIZE'}{'regex'} = '\bXMLSERIALIZE\s*\(';
+$db2_functions_list_3{'XMLTABL'}{'regex'} ='\bEXMLTABL\s*\(';
+$db2_functions_list_3{'XMLTEXT'}{'regex'} = '\bXMLTEXT\s*\(';
+$db2_functions_list_3{'XMLVALIDATE'}{'regex'} = '\bXMLVALIDATE\s*\(';
+$db2_functions_list_3{'XMLXSROBJECTID'}{'regex'} = '\bXMLXSROBJECTID\s*\(';
+$db2_functions_list_3{'XSLTRANSFORM'}{'regex'} = '\bXSLTRANSFORM\s*\(';
+$db2_functions_list_3{'YEAR'}{'regex'} = '\bYEAR\s*\(';
+$db2_functions_list_3{'YEARS_BETWEEN'}{'regex'} = '\bYEARS_BETWEEN\s*\(';
+$db2_functions_list_3{'YMD_BETWEEN'}{'regex'} = '\bYMD_BETWEEN\s*\(';
+
+# DB2_FUNC_4 - each keyword will be matched with a corresponding regex - level 4
+
+# DB2_FUNC_EXTRA - comments/links on db2 functions
+$db2_functions_list_3{'ARRAY_AGG'}{'sourcedocumentation'} = '';
+$db2_functions_list_3{'ARRAY_AGG'}{'pgdocumentation'} = '';
+$db2_functions_list_3{'ARRAY_AGG'}{'pginstruction'} = '';
+$db2_functions_list_3{'ARRAY_AGG'}{'comments'} = q{};
+
 
 # The list of orafce functions. So far the regexes are useless
 my %list_orafce_functions = (
@@ -1564,7 +1882,7 @@ GetOptions(
     'O|output-directory=s'  => \$OUTPUT_DIRECTORY,
     'p|password=s'          => \$PASSWORD,
     'q|quiet'               => \$QUIET,
-    'rdbms'                 => \$RDBMS,
+    'rdbms=s'               => \$RDBMS,
     'r|orafce'              => \$ORAFCE,
     'T|tagfiles'            => \$TAGFILE,
     'u|username=s'          => \$USERNAME,
@@ -1583,8 +1901,8 @@ sub help_handler {
     my ($opt_name, $opt_value) = @_;
 
     options_handling();
-
-    print("Option name is $opt_name and value is $opt_value\n") if ($DEBUG);
+    # print("Option name is $opt_name and value is $opt_value\n") if ($DEBUG);
+    
     if ($opt_value eq '') {
         help_utilisation();
     }
@@ -1762,6 +2080,9 @@ sub options_handling {
     if (($RDBMS eq 'oracle') or ($RDBMS eq '')) {
         $chosen_rdbms = 'oracle';
     }
+    elsif ($RDBMS eq 'db2') {
+        $chosen_rdbms = 'db2';
+    }
     else {
         print STDERR "Unrecognized rdbms ! Possible value(s): (oracle)\n";
 	exit(2);
@@ -1772,6 +2093,12 @@ sub options_handling {
         $rdbms_functions_list_{2} = \%oracle_functions_list_2;
         $rdbms_functions_list_{3} = \%oracle_functions_list_3;
         $rdbms_functions_list_{4} = \%oracle_functions_list_4;
+    }
+    elsif ($chosen_rdbms eq 'db2') {
+	$rdbms_functions_list_{1} = \%db2_functions_list_1;
+        $rdbms_functions_list_{2} = \%db2_functions_list_2;
+        $rdbms_functions_list_{3} = \%db2_functions_list_3;
+        $rdbms_functions_list_{4} = \%db2_functions_list_4;
     }
     
     # Easier migration if orafce is used
@@ -2571,7 +2898,10 @@ sub get_file_content {
 
     # directory access
     if ( $directory_type eq "file" ) {
-        $fc = read_file($f);
+        # $fc = read_file($f);
+	local $/;
+	open my $fh, '<', $f or die "Error, can't open $f: $!";
+	$fc = <$fh>;
     }
     # svn access
     else { 
@@ -2599,8 +2929,6 @@ sub get_file_list {
     my @cur;  # the list of files in our working directory
     print STDERR "Now parsing $directory_type type files\n" if ($DEBUG);
     print STDERR "Extensions =\n" . join(",", @extensions_to_analyze) if ($DEBUG);
-    # print STDERR "Extensions = $extensions_to_analyze" if ($DEBUG);
-
 
     for my $cur_dir (@dir_to_analyze) {
 	# print STDERR "cur_dir= $cur_dir \n" if ($DEBUG);
@@ -2611,8 +2939,6 @@ sub get_file_list {
                 $e = '*.' . $e;
 	    }
 	    @cur = File::Find::Rule->file()->name(@ext)->in($cur_dir);
-	    # print STDERR "\nEXT TO ANALYZE = " . join(',', @ext) if ($DEBUG);
-	    # print STDERR "@ cur = [" . join("\n", @cur) . "]\n";
             push @f, @cur;
         }
 	else { 
@@ -2620,7 +2946,6 @@ sub get_file_list {
             if ( $USERNAME ) {
                 $svncommand = "--username $user_name --password $user_password ";
             }
-	    # $svncommand .= "ls -R $cur_dir | grep -i \"" . " -e " . join(" -e ", @names)                   .$extensions_to_analyze\$\"";
             $svncommand .= "ls -R $cur_dir | grep -i -e \"." . join('$" -e ".', @extensions_to_analyze) . '$"';
 	    print "SVN COMMAND = $svncommand \n" if ($DEBUG);
             @cur = `svn $svncommand`;
@@ -2730,10 +3055,10 @@ sub main {
 			# we add a comment column in the report and format it properly
 			my $comments = '';
                         if ( defined $rdbms_functions_list_{$level}{$element}{'sourcedocumentation'}) {
-                            $comments .= "<a href=\"$rdbms_functions_list_{$level}{$element}{'sourcedocumentation'}\"  target=\"_blank\">Source documentation</a><br/>";
+                            $comments .= "<a href=\"$rdbms_functions_list_{$level}{$element}{'sourcedocumentation'}\" target=\"_blank\">Source documentation</a><br/>";
                         }
                         if ( defined $rdbms_functions_list_{$level}{$element}{'pgdocumentation'}) {
-                            $comments .= "<a href=\"$rdbms_functions_list_{$level}{$element}{'pgdocumentation'}\"  target=\"_blank\">PostgreSQL documentation</a><br/>";
+                            $comments .= "<a href=\"$rdbms_functions_list_{$level}{$element}{'pgdocumentation'}\" target=\"_blank\">PostgreSQL documentation</a><br/>";
                         }
                         if ( defined $rdbms_functions_list_{$level}{$element}{'pginstruction'}) {
                             $comments .= "PostgreSQL instruction: $rdbms_functions_list_{$level}{$element}{'pginstruction'} <br/>";
