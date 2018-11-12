@@ -2,7 +2,7 @@
 
 ################################################################################
 #
-# code2pg v0.11.3 - code migration estimation from Oracle to PostgreSQL
+# code2pg v0.12.0 - code migration estimation from Oracle to PostgreSQL
 #
 # Author: Anthony Nowocien anthony.nowocien@socgen.com
 # Copyright 2018 Société Générale
@@ -79,7 +79,7 @@ my %REGEX_AFTER = (
 ################################################################################
 # Internal variables and constants
 
-our $VERSION                = "0.11.3"; # this script version number
+our $VERSION                = "0.12.0"; # this script version number
 my  $CONFIG_FILE            = "";       # use of a config file
 my  $DEBUG                  = "";       # enable some debugging output
 my  $DIRECTORY              = "";       # the directory to analyze
@@ -2030,12 +2030,14 @@ sub options_handling {
 
     # We should also apply the language ponderation
     if ($LANGUAGE) {
-        if ( $LANGUAGE ~~ ["java", "proc", "cobol", "javascript", "dotnet", "jsp", "plsql"] ) {
+	my @ll = ("java", "proc", "cobol", "javascript", "dotnet", "jsp", "plsql");
+        # if ( $LANGUAGE ~~ ["java", "proc", "cobol", "javascript", "dotnet", "jsp", "plsql"] ) {
+        if ( grep ( /^$LANGUAGE$/, @ll )) {
 	    $chosen_language = $LANGUAGE; 
         }
         else {
 	    print STDERR "Unrecognized language!\n";
-	    exit(2) 
+	    exit(2);
         }
     }
 
@@ -2084,7 +2086,7 @@ sub options_handling {
         $chosen_rdbms = 'db2';
     }
     else {
-        print STDERR "Unrecognized rdbms ! Possible value(s): (oracle)\n";
+        print STDERR "Unrecognized rdbms ! Possible value(s): oracle, db2.\n";
 	exit(2);
     }
 
@@ -2171,7 +2173,7 @@ Usage: code2pg [--option value]
   -q, --quiet              : do not output progress to stdout. Useful for batch 
                              processing and redirection.
   --rdbms rdbms            : from which RDBMS the migration will take place.
-                             Only Oracle is possible now.  (oracle by default)
+                             rdbms = [oracle|db2]. Will be oracle by default.
   -r, --orafce             : will the migration use orafce compatibility layer
   -T, --tagfiles           : if enabled, local source files will be tagged 
                              directly for Oracle instructions. 
@@ -3303,10 +3305,10 @@ Specifies in which directory the report will be saved.
 
 =item B<--rdbms> string
 
-Migration will be from the specified RDBMS to PostgreSQL. So far, only 
-Oracle is supported. 
+Migration will be from the specified RDBMS to PostgreSQL. So far, 
+Oracle and DB2 instructions are supported. 
 
-rdbms = [oracle]
+rdbms = [oracle|db2]
 
 =item B<-r> , B<--orafce>
 
