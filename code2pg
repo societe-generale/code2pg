@@ -2,7 +2,7 @@
 
 ################################################################################
 #
-# code2pg v0.12.0 - code migration estimation from Oracle to PostgreSQL
+# code2pg v0.12.1 - code migration estimation from Oracle to PostgreSQL
 #
 # Author: Anthony Nowocien anthony.nowocien@socgen.com
 # Copyright 2018 Société Générale
@@ -75,11 +75,10 @@ my %REGEX_AFTER = (
     "others"     => '.*?\"', # or in character strings ?
 );
 
-
 ################################################################################
 # Internal variables and constants
 
-our $VERSION                = "0.12.0"; # this script version number
+our $VERSION                = "0.12.1"; # this script version number
 my  $CONFIG_FILE            = "";       # use of a config file
 my  $DEBUG                  = "";       # enable some debugging output
 my  $DIRECTORY              = "";       # the directory to analyze
@@ -1732,6 +1731,306 @@ $db2_functions_list_3{'ARRAY_AGG'}{'pgdocumentation'} = '';
 $db2_functions_list_3{'ARRAY_AGG'}{'pginstruction'} = '';
 $db2_functions_list_3{'ARRAY_AGG'}{'comments'} = q{};
 
+# SQLSRV_FUNC_1 - each keyword will be matched with a corresponding regex - level 1
+
+# SQLSRV_FUNC_2 - each keyword will be matched with a corresponding regex - level 2
+
+# SQLSRV_FUNC_3 - each keyword will be matched with a corresponding regex - level 3
+
+$sqlsrv_functions_list_3{'@@CONNECTIONS'}{'regex'} = '\b@@CONNECTIONS\b';
+$sqlsrv_functions_list_3{'@@CPU_BUSY'}{'regex'} = '\b@@CPU_BUSY\b';
+$sqlsrv_functions_list_3{'@@CURSOR_ROWS'}{'regex'} = '\b@@CURSOR_ROWS\b';
+$sqlsrv_functions_list_3{'@@DATEFIRST'}{'regex'} = '\b@@DATEFIRST\b';
+$sqlsrv_functions_list_3{'@@DBTS'}{'regex'} = '\b@@DBTS\b';
+$sqlsrv_functions_list_3{'@@ERROR'}{'regex'} = '\b@@ERROR\b';
+$sqlsrv_functions_list_3{'@@FETCH_STATUS'}{'regex'} = '\b@@FETCH_STATUS\b';
+$sqlsrv_functions_list_3{'@@IDENTITY'}{'regex'} = '\b@@IDENTITY\b';
+$sqlsrv_functions_list_3{'@@IDLE'}{'regex'} = '\b@@IDLE\b';
+$sqlsrv_functions_list_3{'@@IO_BUSY'}{'regex'} = '\b@@IO_BUSY\b';
+$sqlsrv_functions_list_3{'@@LANGID'}{'regex'} = '\b@@LANGID\b';
+$sqlsrv_functions_list_3{'@@LANGUAGE'}{'regex'} = '\b@@LANGUAGE\b';
+$sqlsrv_functions_list_3{'@@LOCK_TIMEOUT'}{'regex'} = '\b@@LOCK_TIMEOUT\b';
+$sqlsrv_functions_list_3{'@@MAX_CONNECTIONS'}{'regex'} = '\b@@MAX_CONNECTIONS\b';
+$sqlsrv_functions_list_3{'@@MAX_PRECISION'}{'regex'} = '\b@@MAX_PRECISION\b';
+$sqlsrv_functions_list_3{'@@NESTLEVEL'}{'regex'} = '\b@@NESTLEVEL\b';
+$sqlsrv_functions_list_3{'@@OPTIONS'}{'regex'} = '\b@@OPTIONS\b';
+$sqlsrv_functions_list_3{'@@PACKET_ERRORS'}{'regex'} = '\b@@PACKET_ERRORS\b';
+$sqlsrv_functions_list_3{'@@PACK_RECEIVED'}{'regex'} = '\b@@PACK_RECEIVED\b';
+$sqlsrv_functions_list_3{'@@PACK_SENT'}{'regex'} = '\b@@PACK_SENT\b';
+$sqlsrv_functions_list_3{'@@PROCID'}{'regex'} = '\b@@PROCID\b';
+$sqlsrv_functions_list_3{'@@REMSERVER'}{'regex'} = '\b@@REMSERVER\b';
+$sqlsrv_functions_list_3{'@@ROWCOUNT'}{'regex'} = '\b@@ROWCOUNT\b';
+$sqlsrv_functions_list_3{'@@SERVERNAME'}{'regex'} = '\b@@SERVERNAME\b';
+$sqlsrv_functions_list_3{'@@SERVICENAME'}{'regex'} = '\b@@SERVICENAME\b';
+$sqlsrv_functions_list_3{'@@SPID'}{'regex'} = '\b@@SPID\b';
+$sqlsrv_functions_list_3{'@@TEXTSIZE'}{'regex'} = '\b@@TEXTSIZE\b';
+$sqlsrv_functions_list_3{'@@TIMETICKS'}{'regex'} = '\b@@TIMETICKS\b';
+$sqlsrv_functions_list_3{'@@TOTAL_ERRORS'}{'regex'} = '\b@@TOTAL_ERRORS\b';
+$sqlsrv_functions_list_3{'@@TOTAL_READ'}{'regex'} = '\b@@TOTAL_READ\b';
+$sqlsrv_functions_list_3{'@@TOTAL_WRITE'}{'regex'} = '\b@@TOTAL_WRITE\b';
+$sqlsrv_functions_list_3{'@@TRANCOUNT'}{'regex'} = '\b@@TRANCOUNT\b';
+$sqlsrv_functions_list_3{'@@VERSION'}{'regex'} = '\b@@VERSION\b';
+
+$sqlsrv_functions_list_3{'ABS'}{'regex'} = '\bABS\s*\(';
+$sqlsrv_functions_list_3{'ACOS'}{'regex'} = '\bACOS\s*\(';
+$sqlsrv_functions_list_3{'APPLOCK_MODE'}{'regex'} = '\bAPPLOCK_MODE\s*\(';
+$sqlsrv_functions_list_3{'APPLOCK_TEST'}{'regex'} = '\bAPPLOCK_TEST\s*\(';
+$sqlsrv_functions_list_3{'APPROX_COUNT_DISTINCT'}{'regex'} = '\bAPPROX_COUNT_DISTINCT\s*\(';
+$sqlsrv_functions_list_3{'APP_NAME'}{'regex'} = '\bAPP_NAME\s*\(';
+$sqlsrv_functions_list_3{'ASCII'}{'regex'} = '\bASCII\s*\(';
+$sqlsrv_functions_list_3{'ASIN'}{'regex'} = '\bASIN\s*\(';
+$sqlsrv_functions_list_3{'ASSEMBLYPROPERTY'}{'regex'} = '\bASSEMBLYPROPERTY\s*\(';
+$sqlsrv_functions_list_3{'ASYMKEYPROPERTY'}{'regex'} = '\bASYMKEYPROPERTY\s*\(';
+$sqlsrv_functions_list_3{'ASYMKEY_ID'}{'regex'} = '\bASYMKEY_ID\s*\(';
+$sqlsrv_functions_list_3{'ATAN'}{'regex'} = '\bATAN\s*\(';
+$sqlsrv_functions_list_3{'ATN2'}{'regex'} = '\bATN2\s*\(';
+$sqlsrv_functions_list_3{'AVG'}{'regex'} = '\bAVG\s*\(';
+$sqlsrv_functions_list_3{'BINARY_CHECKSUM'}{'regex'} = '\bBINARY_CHECKSUM\s*\(';
+$sqlsrv_functions_list_3{'CAST'}{'regex'} = '\bCAST\s*\(';
+$sqlsrv_functions_list_3{'CEILING'}{'regex'} = '\bCEILING\s*\(';
+$sqlsrv_functions_list_3{'CERTENCODED'}{'regex'} = '\bCERTENCODED\s*\(';
+$sqlsrv_functions_list_3{'CERTPRIVATEKEY'}{'regex'} = '\bCERTPRIVATEKEY\s*\(';
+$sqlsrv_functions_list_3{'CERTPROPERTY'}{'regex'} = '\bCERTPROPERTY\s*\(';
+$sqlsrv_functions_list_3{'CERT_ID'}{'regex'} = '\bCERT_ID\s*\(';
+$sqlsrv_functions_list_3{'CHAR'}{'regex'} = '\bCHAR\s*\(';
+$sqlsrv_functions_list_3{'CHARINDEX'}{'regex'} = '\bCHARINDEX\s*\(';
+$sqlsrv_functions_list_3{'CHECKSUM'}{'regex'} = '\bCHECKSUM\s*\(';
+$sqlsrv_functions_list_3{'CHECKSUM_AGG'}{'regex'} = '\bCHECKSUM_AGG\s*\(';
+$sqlsrv_functions_list_3{'CHOOSE'}{'regex'} = '\bCHOOSE\s*\(';
+$sqlsrv_functions_list_3{'COLLATIONPROPERTY'}{'regex'} = '\bCOLLATIONPROPERTY\s*\(';
+$sqlsrv_functions_list_3{'COLUMNPROPERTY'}{'regex'} = '\bCOLUMNPROPERTY\s*\(';
+$sqlsrv_functions_list_3{'COLUMNS_UPDATED'}{'regex'} = '\bCOLUMNS_UPDATED\s*\(';
+$sqlsrv_functions_list_3{'COL_LENGTH'}{'regex'} = '\bCOL_LENGTH\s*\(';
+$sqlsrv_functions_list_3{'COL_NAME'}{'regex'} = '\bCOL_NAME\s*\(';
+$sqlsrv_functions_list_3{'COMPRESS'}{'regex'} = '\bCOMPRESS\s*\(';
+$sqlsrv_functions_list_3{'CONCAT'}{'regex'} = '\bCONCAT\s*\(';
+$sqlsrv_functions_list_3{'CONCAT_WS'}{'regex'} = '\bCONCAT_WS\s*\(';
+$sqlsrv_functions_list_3{'CONNECTIONPROPERTY'}{'regex'} = '\bCONNECTIONPROPERTY\s*\(';
+$sqlsrv_functions_list_3{'CONTEXT_INFO'}{'regex'} = '\bCONTEXT_INFO\s*\(';
+$sqlsrv_functions_list_3{'CONVERT'}{'regex'} = '\bCONVERT\s*\(';
+$sqlsrv_functions_list_3{'COS'}{'regex'} = '\bCOS\s*\(';
+$sqlsrv_functions_list_3{'COT'}{'regex'} = '\bCOT\s*\(';
+$sqlsrv_functions_list_3{'COUNT'}{'regex'} = '\bCOUNT\s*\(';
+$sqlsrv_functions_list_3{'COUNT_BIG'}{'regex'} = '\bCOUNT_BIG\s*\(';
+$sqlsrv_functions_list_3{'CRYPT_GEN_RANDOM'}{'regex'} = '\bCRYPT_GEN_RANDOM\s*\(';
+$sqlsrv_functions_list_3{'CUME_DIST'}{'regex'} = '\bCUME_DIST\s*\(';
+$sqlsrv_functions_list_3{'CURRENT_REQUEST_ID'}{'regex'} = '\bCURRENT_REQUEST_ID\s*\(';
+$sqlsrv_functions_list_3{'CURRENT_TIMESTAMP'}{'regex'} = '\bCURRENT_TIMESTAMP\s*\(';
+$sqlsrv_functions_list_3{'CURRENT_TRANSACTION_ID'}{'regex'} = '\bCURRENT_TRANSACTION_ID\s*\(';
+$sqlsrv_functions_list_3{'CURRENT_USER'}{'regex'} = '\bCURRENT_USER\s*\(';
+$sqlsrv_functions_list_3{'CURSOR_STATUS'}{'regex'} = '\bCURSOR_STATUS\s*\(';
+$sqlsrv_functions_list_3{'DATABASEPROPERTYEX'}{'regex'} = '\bDATABASEPROPERTYEX\s*\(';
+$sqlsrv_functions_list_3{'DATABASE_PRINCIPAL_ID'}{'regex'} = '\bDATABASE_PRINCIPAL_ID\s*\(';
+$sqlsrv_functions_list_3{'DATALENGTH'}{'regex'} = '\bDATALENGTH\s*\(';
+$sqlsrv_functions_list_3{'DATEADD'}{'regex'} = '\bDATEADD\s*\(';
+$sqlsrv_functions_list_3{'DATEDIFF'}{'regex'} = '\bDATEDIFF\s*\(';
+$sqlsrv_functions_list_3{'DATEDIFF_BIG'}{'regex'} = '\bDATEDIFF_BIG\s*\(';
+$sqlsrv_functions_list_3{'DATEFROMPARTS'}{'regex'} = '\bDATEFROMPARTS\s*\(';
+$sqlsrv_functions_list_3{'DATENAME'}{'regex'} = '\bDATENAME\s*\(';
+$sqlsrv_functions_list_3{'DATEPART'}{'regex'} = '\bDATEPART\s*\(';
+$sqlsrv_functions_list_3{'DATETIME2FROMPARTS'}{'regex'} = '\bDATETIME2FROMPARTS\s*\(';
+$sqlsrv_functions_list_3{'DATETIMEFROMPARTS'}{'regex'} = '\bDATETIMEFROMPARTS\s*\(';
+$sqlsrv_functions_list_3{'DATETIMEOFFSETFROMPARTS'}{'regex'} = '\bDATETIMEOFFSETFROMPARTS\s*\(';
+$sqlsrv_functions_list_3{'DAY'}{'regex'} = '\bDAY\s*\(';
+$sqlsrv_functions_list_3{'DB_ID'}{'regex'} = '\bDB_ID\s*\(';
+$sqlsrv_functions_list_3{'DB_NAME'}{'regex'} = '\bDB_NAME\s*\(';
+$sqlsrv_functions_list_3{'DECOMPRESS'}{'regex'} = '\bDECOMPRESS\s*\(';
+$sqlsrv_functions_list_3{'DECRYPTBYASYMKEY'}{'regex'} = '\bDECRYPTBYASYMKEY\s*\(';
+$sqlsrv_functions_list_3{'DECRYPTBYCERT'}{'regex'} = '\bDECRYPTBYCERT\s*\(';
+$sqlsrv_functions_list_3{'DECRYPTBYKEY'}{'regex'} = '\bDECRYPTBYKEY\s*\(';
+$sqlsrv_functions_list_3{'DECRYPTBYKEYAUTOASYMKEY'}{'regex'} = '\bDECRYPTBYKEYAUTOASYMKEY\s*\(';
+$sqlsrv_functions_list_3{'DECRYPTBYKEYAUTOCERT'}{'regex'} = '\bDECRYPTBYKEYAUTOCERT\s*\(';
+$sqlsrv_functions_list_3{'DECRYPTBYPASSPHRASE'}{'regex'} = '\bDECRYPTBYPASSPHRASE\s*\(';
+$sqlsrv_functions_list_3{'DEGREES'}{'regex'} = '\bDEGREES\s*\(';
+$sqlsrv_functions_list_3{'DENSE_RANK'}{'regex'} = '\bDENSE_RANK\s*\(';
+$sqlsrv_functions_list_3{'DIFFERENCE'}{'regex'} = '\bDIFFERENCE\s*\(';
+$sqlsrv_functions_list_3{'ENCRYPTBYASYMKEY'}{'regex'} = '\bENCRYPTBYASYMKEY\s*\(';
+$sqlsrv_functions_list_3{'ENCRYPTBYCERT'}{'regex'} = '\bENCRYPTBYCERT\s*\(';
+$sqlsrv_functions_list_3{'ENCRYPTBYKEY'}{'regex'} = '\bENCRYPTBYKEY\s*\(';
+$sqlsrv_functions_list_3{'ENCRYPTBYPASSPHRASE'}{'regex'} = '\bENCRYPTBYPASSPHRASE\s*\(';
+$sqlsrv_functions_list_3{'EOMONTH'}{'regex'} = '\bEOMONTH\s*\(';
+$sqlsrv_functions_list_3{'ERROR_LINE'}{'regex'} = '\bERROR_LINE\s*\(';
+$sqlsrv_functions_list_3{'ERROR_MESSAGE'}{'regex'} = '\bERROR_MESSAGE\s*\(';
+$sqlsrv_functions_list_3{'ERROR_NUMBER'}{'regex'} = '\bERROR_NUMBER\s*\(';
+$sqlsrv_functions_list_3{'ERROR_PROCEDURE'}{'regex'} = '\bERROR_PROCEDURE\s*\(';
+$sqlsrv_functions_list_3{'ERROR_SEVERITY'}{'regex'} = '\bERROR_SEVERITY\s*\(';
+$sqlsrv_functions_list_3{'ERROR_STATE'}{'regex'} = '\bERROR_STATE\s*\(';
+$sqlsrv_functions_list_3{'EVENTDATA'}{'regex'} = '\bEVENTDATA\s*\(';
+$sqlsrv_functions_list_3{'EXP'}{'regex'} = '\bEXP\s*\(';
+$sqlsrv_functions_list_3{'FILEGROUPPROPERTY'}{'regex'} = '\bFILEGROUPPROPERTY\s*\(';
+$sqlsrv_functions_list_3{'FILEGROUP_ID'}{'regex'} = '\bFILEGROUP_ID\s*\(';
+$sqlsrv_functions_list_3{'FILEGROUP_NAME'}{'regex'} = '\bFILEGROUP_NAME\s*\(';
+$sqlsrv_functions_list_3{'FILEPROPERTY'}{'regex'} = '\bFILEPROPERTY\s*\(';
+$sqlsrv_functions_list_3{'FILE_ID'}{'regex'} = '\bFILE_ID\s*\(';
+$sqlsrv_functions_list_3{'FILE_IDEX'}{'regex'} = '\bFILE_IDEX\s*\(';
+$sqlsrv_functions_list_3{'FILE_NAME'}{'regex'} = '\bFILE_NAME\s*\(';
+$sqlsrv_functions_list_3{'FIRST_VALUE'}{'regex'} = '\bFIRST_VALUE\s*\(';
+$sqlsrv_functions_list_3{'FLOOR'}{'regex'} = '\bFLOOR\s*\(';
+$sqlsrv_functions_list_3{'FORMAT'}{'regex'} = '\bFORMAT\s*\(';
+$sqlsrv_functions_list_3{'FORMATMESSAGE'}{'regex'} = '\bFORMATMESSAGE\s*\(';
+$sqlsrv_functions_list_3{'FULLTEXTCATALOGPROPERTY'}{'regex'} = '\bFULLTEXTCATALOGPROPERTY\s*\(';
+$sqlsrv_functions_list_3{'FULLTEXTSERVICEPROPERTY'}{'regex'} = '\bFULLTEXTSERVICEPROPERTY\s*\(';
+$sqlsrv_functions_list_3{'GETANSINULL'}{'regex'} = '\bGETANSINULL\s*\(';
+$sqlsrv_functions_list_3{'GETDATE'}{'regex'} = '\bGETDATE\s*\(';
+$sqlsrv_functions_list_3{'GETUTCDATE'}{'regex'} = '\bGETUTCDATE\s*\(';
+$sqlsrv_functions_list_3{'GET_FILESTREAM_TRANSACTION_CONTEXT'}{'regex'} = '\bGET_FILESTREAM_TRANSACTION_CONTEXT\s*\(';
+$sqlsrv_functions_list_3{'GROUPING'}{'regex'} = '\bGROUPING\s*\(';
+$sqlsrv_functions_list_3{'GROUPING_ID'}{'regex'} = '\bGROUPING_ID\s*\(';
+$sqlsrv_functions_list_3{'HASHBYTES'}{'regex'} = '\bHASHBYTES\s*\(';
+$sqlsrv_functions_list_3{'HAS_DBACCESS'}{'regex'} = '\bHAS_DBACCESS\s*\(';
+$sqlsrv_functions_list_3{'HAS_PERMS_BY_NAME'}{'regex'} = '\bHAS_PERMS_BY_NAME\s*\(';
+$sqlsrv_functions_list_3{'HOST_ID'}{'regex'} = '\bHOST_ID\s*\(';
+$sqlsrv_functions_list_3{'HOST_NAME'}{'regex'} = '\bHOST_NAME\s*\(';
+$sqlsrv_functions_list_3{'IDENTITY'}{'regex'} = '\bIDENTITY\s*\(';
+$sqlsrv_functions_list_3{'IDENT_CURRENT'}{'regex'} = '\bIDENT_CURRENT\s*\(';
+$sqlsrv_functions_list_3{'IDENT_INCR'}{'regex'} = '\bIDENT_INCR\s*\(';
+$sqlsrv_functions_list_3{'IDENT_SEED'}{'regex'} = '\bIDENT_SEED\s*\(';
+$sqlsrv_functions_list_3{'IIF'}{'regex'} = '\bIIF\s*\(';
+$sqlsrv_functions_list_3{'INDEXKEY_PROPERTY'}{'regex'} = '\bINDEXKEY_PROPERTY\s*\(';
+$sqlsrv_functions_list_3{'INDEXPROPERTY'}{'regex'} = '\bINDEXPROPERTY\s*\(';
+$sqlsrv_functions_list_3{'INDEX_COL'}{'regex'} = '\bINDEX_COL\s*\(';
+$sqlsrv_functions_list_3{'ISDATE'}{'regex'} = '\bISDATE\s*\(';
+$sqlsrv_functions_list_3{'ISJSON'}{'regex'} = '\bISJSON\s*\(';
+$sqlsrv_functions_list_3{'ISNULL'}{'regex'} = '\bISNULL\s*\(';
+$sqlsrv_functions_list_3{'ISNUMERIC'}{'regex'} = '\bISNUMERIC\s*\(';
+$sqlsrv_functions_list_3{'IS_MEMBER'}{'regex'} = '\bIS_MEMBER\s*\(';
+$sqlsrv_functions_list_3{'IS_OBJECTSIGNED'}{'regex'} = '\bIS_OBJECTSIGNED\s*\(';
+$sqlsrv_functions_list_3{'IS_ROLEMEMBER'}{'regex'} = '\bIS_ROLEMEMBER\s*\(';
+$sqlsrv_functions_list_3{'IS_SRVROLEMEMBER'}{'regex'} = '\bIS_SRVROLEMEMBER\s*\(';
+$sqlsrv_functions_list_3{'JSON_MODIFY'}{'regex'} = '\bJSON_MODIFY\s*\(';
+$sqlsrv_functions_list_3{'JSON_QUERY'}{'regex'} = '\bJSON_QUERY\s*\(';
+$sqlsrv_functions_list_3{'JSON_VALUE'}{'regex'} = '\bJSON_VALUE\s*\(';
+$sqlsrv_functions_list_3{'KEY_GUID'}{'regex'} = '\bKEY_GUID\s*\(';
+$sqlsrv_functions_list_3{'KEY_ID'}{'regex'} = '\bKEY_ID\s*\(';
+$sqlsrv_functions_list_3{'KEY_NAME'}{'regex'} = '\bKEY_NAME\s*\(';
+$sqlsrv_functions_list_3{'LAG'}{'regex'} = '\bLAG\s*\(';
+$sqlsrv_functions_list_3{'LAST_VALUE'}{'regex'} = '\bLAST_VALUE\s*\(';
+$sqlsrv_functions_list_3{'LEAD'}{'regex'} = '\bLEAD\s*\(';
+$sqlsrv_functions_list_3{'LEFT'}{'regex'} = '\bLEFT\s*\(';
+$sqlsrv_functions_list_3{'LEN'}{'regex'} = '\bLEN\s*\(';
+$sqlsrv_functions_list_3{'LOG'}{'regex'} = '\bLOG\s*\(';
+$sqlsrv_functions_list_3{'LOG10'}{'regex'} = '\bLOG10\s*\(';
+$sqlsrv_functions_list_3{'LOGINPROPERTY'}{'regex'} = '\bLOGINPROPERTY\s*\(';
+$sqlsrv_functions_list_3{'LOWER'}{'regex'} = '\bLOWER\s*\(';
+$sqlsrv_functions_list_3{'LTRIM'}{'regex'} = '\bLTRIM\s*\(';
+$sqlsrv_functions_list_3{'MAX'}{'regex'} = '\bMAX\s*\(';
+$sqlsrv_functions_list_3{'MIN'}{'regex'} = '\bMIN\s*\(';
+$sqlsrv_functions_list_3{'MIN_ACTIVE_ROWVERSION'}{'regex'} = '\bMIN_ACTIVE_ROWVERSION\s*\(';
+$sqlsrv_functions_list_3{'MONTH'}{'regex'} = '\bMONTH\s*\(';
+$sqlsrv_functions_list_3{'NCHAR'}{'regex'} = '\bNCHAR\s*\(';
+$sqlsrv_functions_list_3{'NEWID'}{'regex'} = '\bNEWID\s*\(';
+$sqlsrv_functions_list_3{'NEWSEQUENTIALID'}{'regex'} = '\bNEWSEQUENTIALID\s*\(';
+$sqlsrv_functions_list_3{'NEXT VALUE FOR'}{'regex'} = '\bNEXT VALUE FOR\s*\(';
+$sqlsrv_functions_list_3{'NTILE'}{'regex'} = '\bNTILE\s*\(';
+$sqlsrv_functions_list_3{'OBJECTPROPERTY'}{'regex'} = '\bOBJECTPROPERTY\s*\(';
+$sqlsrv_functions_list_3{'OBJECTPROPERTYEX'}{'regex'} = '\bOBJECTPROPERTYEX\s*\(';
+$sqlsrv_functions_list_3{'OBJECT_DEFINITION'}{'regex'} = '\bOBJECT_DEFINITION\s*\(';
+$sqlsrv_functions_list_3{'OBJECT_ID'}{'regex'} = '\bOBJECT_ID\s*\(';
+$sqlsrv_functions_list_3{'OBJECT_NAME'}{'regex'} = '\bOBJECT_NAME\s*\(';
+$sqlsrv_functions_list_3{'OBJECT_SCHEMA_NAME'}{'regex'} = '\bOBJECT_SCHEMA_NAME\s*\(';
+$sqlsrv_functions_list_3{'OPENDATASOURCE'}{'regex'} = '\bOPENDATASOURCE\s*\(';
+$sqlsrv_functions_list_3{'OPENJSON'}{'regex'} = '\bOPENJSON\s*\(';
+$sqlsrv_functions_list_3{'OPENQUERY'}{'regex'} = '\bOPENQUERY\s*\(';
+$sqlsrv_functions_list_3{'OPENROWSET'}{'regex'} = '\bOPENROWSET\s*\(';
+$sqlsrv_functions_list_3{'OPENXML'}{'regex'} = '\bOPENXML\s*\(';
+$sqlsrv_functions_list_3{'ORIGINAL_DB_NAME'}{'regex'} = '\bORIGINAL_DB_NAME\s*\(';
+$sqlsrv_functions_list_3{'ORIGINAL_LOGIN'}{'regex'} = '\bORIGINAL_LOGIN\s*\(';
+$sqlsrv_functions_list_3{'PARSE'}{'regex'} = '\bPARSE\s*\(';
+$sqlsrv_functions_list_3{'PARSENAME'}{'regex'} = '\bPARSENAME\s*\(';
+$sqlsrv_functions_list_3{'PATINDEX'}{'regex'} = '\bPATINDEX\s*\(';
+$sqlsrv_functions_list_3{'PERCENTILE_CONT'}{'regex'} = '\bPERCENTILE_CONT\s*\(';
+$sqlsrv_functions_list_3{'PERCENTILE_DISC'}{'regex'} = '\bPERCENTILE_DISC\s*\(';
+$sqlsrv_functions_list_3{'PERCENT_RANK'}{'regex'} = '\bPERCENT_RANK\s*\(';
+$sqlsrv_functions_list_3{'PERMISSIONS'}{'regex'} = '\bPERMISSIONS\s*\(';
+$sqlsrv_functions_list_3{'PI'}{'regex'} = '\bPI\s*\(';
+$sqlsrv_functions_list_3{'POWER'}{'regex'} = '\bPOWER\s*\(';
+$sqlsrv_functions_list_3{'PUBLISHINGSERVERNAME'}{'regex'} = '\bPUBLISHINGSERVERNAME\s*\(';
+$sqlsrv_functions_list_3{'PWDCOMPARE'}{'regex'} = '\bPWDCOMPARE\s*\(';
+$sqlsrv_functions_list_3{'PWDENCRYPT'}{'regex'} = '\bPWDENCRYPT\s*\(';
+$sqlsrv_functions_list_3{'QUOTENAME'}{'regex'} = '\bQUOTENAME\s*\(';
+$sqlsrv_functions_list_3{'RADIANS'}{'regex'} = '\bRADIANS\s*\(';
+$sqlsrv_functions_list_3{'RAND'}{'regex'} = '\bRAND\s*\(';
+$sqlsrv_functions_list_3{'RANK'}{'regex'} = '\bRANK\s*\(';
+$sqlsrv_functions_list_3{'REPLACE'}{'regex'} = '\bREPLACE\s*\(';
+$sqlsrv_functions_list_3{'REPLICATE'}{'regex'} = '\bREPLICATE\s*\(';
+$sqlsrv_functions_list_3{'REVERSE'}{'regex'} = '\bREVERSE\s*\(';
+$sqlsrv_functions_list_3{'RIGHT'}{'regex'} = '\bRIGHT\s*\(';
+$sqlsrv_functions_list_3{'ROUND'}{'regex'} = '\bROUND\s*\(';
+$sqlsrv_functions_list_3{'ROWCOUNT_BIG'}{'regex'} = '\bROWCOUNT_BIG\s*\(';
+$sqlsrv_functions_list_3{'ROW_NUMBER'}{'regex'} = '\bROW_NUMBER\s*\(';
+$sqlsrv_functions_list_3{'RTRIM'}{'regex'} = '\bRTRIM\s*\(';
+$sqlsrv_functions_list_3{'SCHEMA_ID'}{'regex'} = '\bSCHEMA_ID\s*\(';
+$sqlsrv_functions_list_3{'SCHEMA_NAME'}{'regex'} = '\bSCHEMA_NAME\s*\(';
+$sqlsrv_functions_list_3{'SCOPE_IDENTITY'}{'regex'} = '\bSCOPE_IDENTITY\s*\(';
+$sqlsrv_functions_list_3{'SERVERPROPERTY'}{'regex'} = '\bSERVERPROPERTY\s*\(';
+$sqlsrv_functions_list_3{'SESSIONPROPERTY'}{'regex'} = '\bSESSIONPROPERTY\s*\(';
+$sqlsrv_functions_list_3{'SESSION_CONTEXT'}{'regex'} = '\bSESSION_CONTEXT\s*\(';
+$sqlsrv_functions_list_3{'SESSION_USER'}{'regex'} = '\bSESSION_USER\s*\(';
+$sqlsrv_functions_list_3{'SIGN'}{'regex'} = '\bSIGN\s*\(';
+$sqlsrv_functions_list_3{'SIGNBYASYMKEY'}{'regex'} = '\bSIGNBYASYMKEY\s*\(';
+$sqlsrv_functions_list_3{'SIGNBYCERT'}{'regex'} = '\bSIGNBYCERT\s*\(';
+$sqlsrv_functions_list_3{'SIN'}{'regex'} = '\bSIN\s*\(';
+$sqlsrv_functions_list_3{'SMALLDATETIMEFROMPARTS'}{'regex'} = '\bSMALLDATETIMEFROMPARTS\s*\(';
+$sqlsrv_functions_list_3{'SOUNDEX'}{'regex'} = '\bSOUNDEX\s*\(';
+$sqlsrv_functions_list_3{'SPACE'}{'regex'} = '\bSPACE\s*\(';
+$sqlsrv_functions_list_3{'SQL_VARIANT_PROPERTY'}{'regex'} = '\bSQL_VARIANT_PROPERTY\s*\(';
+$sqlsrv_functions_list_3{'SQRT'}{'regex'} = '\bSQRT\s*\(';
+$sqlsrv_functions_list_3{'SQUARE'}{'regex'} = '\bSQUARE\s*\(';
+$sqlsrv_functions_list_3{'STATS_DATE'}{'regex'} = '\bSTATS_DATE\s*\(';
+$sqlsrv_functions_list_3{'STDEV'}{'regex'} = '\bSTDEV\s*\(';
+$sqlsrv_functions_list_3{'STDEVP'}{'regex'} = '\bSTDEVP\s*\(';
+$sqlsrv_functions_list_3{'STR'}{'regex'} = '\bSTR\s*\(';
+$sqlsrv_functions_list_3{'STRING_AGG'}{'regex'} = '\bSTRING_AGG\s*\(';
+$sqlsrv_functions_list_3{'STRING_ESCAPE'}{'regex'} = '\bSTRING_ESCAPE\s*\(';
+$sqlsrv_functions_list_3{'STRING_SPLIT'}{'regex'} = '\bSTRING_SPLIT\s*\(';
+$sqlsrv_functions_list_3{'STUFF'}{'regex'} = '\bSTUFF\s*\(';
+$sqlsrv_functions_list_3{'SUBSTRING'}{'regex'} = '\bSUBSTRING\s*\(';
+$sqlsrv_functions_list_3{'SUM'}{'regex'} = '\bSUM\s*\(';
+$sqlsrv_functions_list_3{'SUSER_ID'}{'regex'} = '\bSUSER_ID\s*\(';
+$sqlsrv_functions_list_3{'SUSER_NAME'}{'regex'} = '\bSUSER_NAME\s*\(';
+$sqlsrv_functions_list_3{'SUSER_SID'}{'regex'} = '\bSUSER_SID\s*\(';
+$sqlsrv_functions_list_3{'SUSER_SNAME'}{'regex'} = '\bSUSER_SNAME\s*\(';
+$sqlsrv_functions_list_3{'SWITCHOFFSET'}{'regex'} = '\bSWITCHOFFSET\s*\(';
+$sqlsrv_functions_list_3{'SYMKEYPROPERTY'}{'regex'} = '\bSYMKEYPROPERTY\s*\(';
+$sqlsrv_functions_list_3{'SYSDATETIME'}{'regex'} = '\bSYSDATETIME\s*\(';
+$sqlsrv_functions_list_3{'SYSDATETIMEOFFSET'}{'regex'} = '\bSYSDATETIMEOFFSET\s*\(';
+$sqlsrv_functions_list_3{'SYSTEM_USER'}{'regex'} = '\bSYSTEM_USER\s*\(';
+$sqlsrv_functions_list_3{'SYSUTCDATETIME'}{'regex'} = '\bSYSUTCDATETIME\s*\(';
+$sqlsrv_functions_list_3{'TAN'}{'regex'} = '\bTAN\s*\(';
+$sqlsrv_functions_list_3{'TERTIARY_WEIGHTS'}{'regex'} = '\bTERTIARY_WEIGHTS\s*\(';
+$sqlsrv_functions_list_3{'TEXTPTR'}{'regex'} = '\bTEXTPTR\s*\(';
+$sqlsrv_functions_list_3{'TEXTVALID'}{'regex'} = '\bTEXTVALID\s*\(';
+$sqlsrv_functions_list_3{'TIMEFROMPARTS'}{'regex'} = '\bTIMEFROMPARTS\s*\(';
+$sqlsrv_functions_list_3{'TODATETIMEOFFSET'}{'regex'} = '\bTODATETIMEOFFSET\s*\(';
+$sqlsrv_functions_list_3{'TRANSLATE'}{'regex'} = '\bTRANSLATE\s*\(';
+$sqlsrv_functions_list_3{'TRIGGER_NESTLEVEL'}{'regex'} = '\bTRIGGER_NESTLEVEL\s*\(';
+$sqlsrv_functions_list_3{'TRIM'}{'regex'} = '\bTRIM\s*\(';
+$sqlsrv_functions_list_3{'TRY_CAST'}{'regex'} = '\bTRY_CAST\s*\(';
+$sqlsrv_functions_list_3{'TRY_CONVERT'}{'regex'} = '\bTRY_CONVERT\s*\(';
+$sqlsrv_functions_list_3{'TRY_PARSE'}{'regex'} = '\bTRY_PARSE\s*\(';
+$sqlsrv_functions_list_3{'TYPEPROPERTY'}{'regex'} = '\bTYPEPROPERTY\s*\(';
+$sqlsrv_functions_list_3{'TYPE_ID'}{'regex'} = '\bTYPE_ID\s*\(';
+$sqlsrv_functions_list_3{'TYPE_NAME'}{'regex'} = '\bTYPE_NAME\s*\(';
+$sqlsrv_functions_list_3{'UNICODE'}{'regex'} = '\bUNICODE\s*\(';
+$sqlsrv_functions_list_3{'UPDATE'}{'regex'} = '\bUPDATE\s*\(';
+$sqlsrv_functions_list_3{'UPPER'}{'regex'} = '\bUPPER\s*\(';
+$sqlsrv_functions_list_3{'USER'}{'regex'} = '\bUSER\s*\(';
+$sqlsrv_functions_list_3{'USER_ID'}{'regex'} = '\bUSER_ID\s*\(';
+$sqlsrv_functions_list_3{'USER_NAME'}{'regex'} = '\bUSER_NAME\s*\(';
+$sqlsrv_functions_list_3{'VAR'}{'regex'} = '\bVAR\s*\(';
+$sqlsrv_functions_list_3{'VARP'}{'regex'} = '\bVARP\s*\(';
+$sqlsrv_functions_list_3{'VERIFYSIGNEDBYASYMKEY'}{'regex'} = '\bVERIFYSIGNEDBYASYMKEY\s*\(';
+$sqlsrv_functions_list_3{'VERIFYSIGNEDBYCERT'}{'regex'} = '\bVERIFYSIGNEDBYCERT\s*\(';
+$sqlsrv_functions_list_3{'XACT_STATE'}{'regex'} = '\bXACT_STATE\s*\(';
+$sqlsrv_functions_list_3{'YEAR'}{'regex'} = '\bYEAR\s*\(';
+
+# SQLSRV_FUNC_4 - each keyword will be matched with a corresponding regex - level 4
+
+# SQLSRV_FUNC_EXTRA - comments/links on sql server functions
+$sqlsrv_functions_list_3{'ABS'}{'sourcedocumentation'} = 'https://docs.microsoft.com/en-us/sql/t-sql/functions/abs-transact-sql';
+$sqlsrv_functions_list_3{'ABS'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-math.html';
+$sqlsrv_functions_list_3{'ABS'}{'pginstruction'} = 'abs';
+$sqlsrv_functions_list_3{'ABS'}{'comments'} = q{};
 
 # The list of orafce functions. So far the regexes are useless
 my %list_orafce_functions = (
@@ -1882,7 +2181,7 @@ GetOptions(
     'O|output-directory=s'  => \$OUTPUT_DIRECTORY,
     'p|password=s'          => \$PASSWORD,
     'q|quiet'               => \$QUIET,
-    'rdbms=s'               => \$RDBMS,
+    'R|rdbms=s'             => \$RDBMS,
     'r|orafce'              => \$ORAFCE,
     'T|tagfiles'            => \$TAGFILE,
     'u|username=s'          => \$USERNAME,
@@ -1901,7 +2200,7 @@ sub help_handler {
     my ($opt_name, $opt_value) = @_;
 
     options_handling();
-    # print("Option name is $opt_name and value is $opt_value\n") if ($DEBUG);
+    print("Option name is $opt_name and value is $opt_value\n") if ($DEBUG);
     
     if ($opt_value eq '') {
         help_utilisation();
@@ -1919,7 +2218,7 @@ sub help_handler {
 sub options_handling {
 
     my %config_file;
-
+print "OH1\n";
     if ($CONFIG_FILE) {
         my $conf = Config::General->new($CONFIG_FILE);
         %config_file = $conf->getall;
@@ -2030,8 +2329,7 @@ sub options_handling {
 
     # We should also apply the language ponderation
     if ($LANGUAGE) {
-	my @ll = ("java", "proc", "cobol", "javascript", "dotnet", "jsp", "plsql");
-        # if ( $LANGUAGE ~~ ["java", "proc", "cobol", "javascript", "dotnet", "jsp", "plsql"] ) {
+	my @ll = ("java", "plsql", "shell", "proc", "cobol", "javascript", "dotnet" );
         if ( grep ( /^$LANGUAGE$/, @ll )) {
 	    $chosen_language = $LANGUAGE; 
         }
@@ -2085,8 +2383,11 @@ sub options_handling {
     elsif ($RDBMS eq 'db2') {
         $chosen_rdbms = 'db2';
     }
+    elsif ($RDBMS eq 'mssql') {
+        $chosen_rdbms = 'mssql';
+    }
     else {
-        print STDERR "Unrecognized rdbms ! Possible value(s): oracle, db2.\n";
+        print STDERR "Unrecognized rdbms ! Possible value(s): oracle, db2, mssql.\n";
 	exit(2);
     }
 
@@ -2102,10 +2403,16 @@ sub options_handling {
         $rdbms_functions_list_{3} = \%db2_functions_list_3;
         $rdbms_functions_list_{4} = \%db2_functions_list_4;
     }
+    elsif ($chosen_rdbms eq 'mssql') {
+	$rdbms_functions_list_{1} = \%sqlsrv_functions_list_1;
+        $rdbms_functions_list_{2} = \%sqlsrv_functions_list_2;
+        $rdbms_functions_list_{3} = \%sqlsrv_functions_list_3;
+        $rdbms_functions_list_{4} = \%sqlsrv_functions_list_4;
+    }
     
     # Easier migration if orafce is used
     # we will remove from all lists elements found in the orafce hash
-    if ($ORAFCE) {
+    if ($ORAFCE && $chosen_rdbms eq 'oracle') {
         foreach my $item ( keys %list_orafce_functions ) {
             if ( exists $rdbms_functions_list_{1}{$item} ) {
 		# print "deleted $rdbms_functions_list_{1}{$item}\n" if ($DEBUG);
@@ -2172,8 +2479,9 @@ Usage: code2pg [--option value]
   -p, --password pwd       : password for SVN access
   -q, --quiet              : do not output progress to stdout. Useful for batch 
                              processing and redirection.
-  --rdbms rdbms            : from which RDBMS the migration will take place.
-                             rdbms = [oracle|db2]. Will be oracle by default.
+  -R, --rdbms rdbms        : from which RDBMS the migration will take place.
+                             rdbms = [oracle|db2|mssql]. 
+			     Will be oracle by default.
   -r, --orafce             : will the migration use orafce compatibility layer
   -T, --tagfiles           : if enabled, local source files will be tagged 
                              directly for Oracle instructions. 
@@ -3168,7 +3476,7 @@ sub main {
 }
 
 #####################################################################
-# Generate man and html pages with perldoc, podselect, pod2man, ...
+# Generate man and html pages with podselect, perldoc, pod2man, ...
 #####################################################################
 
 =head1 NAME
@@ -3306,9 +3614,9 @@ Specifies in which directory the report will be saved.
 =item B<--rdbms> string
 
 Migration will be from the specified RDBMS to PostgreSQL. So far, 
-Oracle and DB2 instructions are supported. 
+Oracle, DB2, MsSQL instructions are supported. 
 
-rdbms = [oracle|db2]
+rdbms = [oracle|db2|mssql]
 
 =item B<-r> , B<--orafce>
 
