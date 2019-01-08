@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.12.1 (20/12/2018)
+
+- First SQL Server instructions. All instructions are considered at level3. This can give vastly wrong estimates but will be tuned later on.
+- SQL Server functionnality is considered alpha.
+
 ## 0.12.0 (19/10/2018)
 
 - First DB2 instructions. All instructions are considered at level3. This can give vastly wrong estimates but will be tuned later on.
