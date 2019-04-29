@@ -19,7 +19,7 @@ It can:
 Prerequisites :
 -------------
 
-`code2pg` is a standalone script. It requires the `File::Slurp`, `File::Find::Rule`, `List::MoreUtils`, `Getopt::Long` and `Config::General` Perl modules. They can be obtained either from a CPAN client or from your distribution.
+`code2pg` is a standalone script. It requires Perl >= 5.20 and the `File::Slurp`, `File::Find::Rule`, `List::MoreUtils`, `Getopt::Long` and `Config::General` Perl modules. They can be obtained either from a CPAN client or from your distribution.
 
 On a Centos 7(+) box, it can be installed this way:
 
@@ -33,7 +33,7 @@ On a Debian box, the packages could be installed with:
 sudo apt-get install libfile-slurp-perl libfile-find-rule-perl libconfig-general-perl liblist-moreutils-perl libgetopt-mixed-perl
 ```
 
-The script has been tested on Windows with Strawberry Perl (v5.24.3) with the proper modules installed (the CPAN client can be used for this). A warning is issued though as `wc` is usually not recognized.
+The script has been tested very lightly on Windows with Strawberry Perl (v5.24.3) with the proper modules installed (the CPAN client can be used for this). A warning is issued though as `wc` is usually not recognized.
 
 Installation
 ------------
@@ -65,22 +65,22 @@ Please refer to the complete [generated documentation](https://github.com/societ
 ```
 ./code2pg --help ALL_INSTRUCTIONS | pandoc -f markdown -o myfile.pdf
 ```
-- analyze java files in the current directory with an extension .java and generate an estimation.html report:
+- analyze files in the current directory with an extension .java and generate an estimation.html report. SQL instructions will have to searched in comma delimited strings:
 ```
-./code2pg -e java -l java
+./code2pg -e java -l comma-strings
 ```
-- analyze java, jsp and .properties files in the current directory. This will so far need two reports as Oracle instructions will need to be analyzed in "" delimited strings, but directly in .properties files:
+- analyze java, jsp and .properties files in the current directory. This will so far need two reports as Oracle instructions will need to be analyzed in comma delimited strings, but directly in .properties files:
 ```
-./code2pg -e java -e jsp -l java -f myproject_java.html
-./code2pg -e properties -l plsql -f myproject_properties.html
+./code2pg -e java -e jsp -l comma-strings -f myproject_java.html
+./code2pg -e properties -l plain -f myproject_properties.html
 ```
-- analyze plsql files in two directories with extension .properties and generate a named html report. When SQL files must be analyzed directly (such as pl/sql or .properties files), please configure the language as plsql. For other languages, Oracle instructions will be searched between string delimiters.
+- analyze plsql files in two directories with extension .properties and generate a named html report. When SQL files must be analyzed directly (such as pl/sql or .properties files), please configure the language as "plain". For other languages, Oracle instructions will be searched between string delimiters.
 ```
-./code2pg -e properties -l plsql -d /tmp/project1 -d /tmp/project2 -o project_estimate.html
+./code2pg -e properties -l plain -d /tmp/project1 -d /tmp/project2 -o project_estimate.html
 ```
 - analyze java files in a SVN repository and generate a text report:
 ```
-./code2pg -D svn -d https://mysvnrepo/project/trunk -l java -e java -f txt
+./code2pg -D svn -d https://mysvnrepo/project/trunk -l comma-strings -e java -f txt
 ```
 - use a configuration file
 ```
@@ -103,11 +103,11 @@ Estimation: 0.19 man-days
 Settings
 ========
 
-- Version code2pg: 0.11.2
-- Analysis date: 07/08/2018
+- Version code2pg: 0.13.0
+- Analysis date: 29/04/2019
 - Source code directory: /home/user/migration-project/
 - Number of .java files: 76
-- Language: java
+- Language: comma-strings
 - Number of analyzed LOC: 0
 - Log file: 
 - orafce usage: No

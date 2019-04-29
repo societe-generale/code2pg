@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.13 (29/04/2019)
+
+- Now requires Perl >= 5.20.
+- This release brings incompatible changes with the previous ones. --language has been changed to make things clearer. SQL instructions now have to be searched in "plain" text or "comma-strings".
+
 ## 0.12.1 (20/12/2018)
 
 - First SQL Server instructions. All instructions are considered at level3. This can give vastly wrong estimates but will be tuned later on.

@@ -97,9 +97,13 @@ available instructions will be sent to standard output.
 
 =item B<-l> , B<--language> string
 
-The chosen language calling the RDBMS. This should be set together with 
-I<extension> when no configuration file is provided.
-lang = [java|proc|cobol|javascript|dotnet|plsql|...]
+Where code2pg will look for SQL instructions. This can be directly as in 
+sql files, in comma delimited strings (like java files for eg.) or in 
+tag delimited areas. 
+
+This should be set together with I<extension> when no configuration file 
+is provided.
+lang = [plain|comma-strings|tags]
 
 =item B<--level1-minutes > integer
 
