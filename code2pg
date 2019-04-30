@@ -735,8 +735,8 @@ sub oracle_init {
     $oracle_functions_list_4{'CONNECT BY'}{'pginstruction'} = 'WITH RECURSIVE';
     $oracle_functions_list_4{'CONNECT BY'}{'comments'} = q{};
     $oracle_functions_list_4{'CONVERT'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions041.htm';
-    $oracle_functions_list_4{'CONVERT'}{'pgdocumentation'} = '';
-    $oracle_functions_list_4{'CONVERT'}{'pginstruction'} = 'No equivalent';
+    $oracle_functions_list_4{'CONVERT'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/functions-string.html';
+    $oracle_functions_list_4{'CONVERT'}{'pginstruction'} = 'convert()';
     $oracle_functions_list_4{'CONVERT'}{'comments'} = q{};
     $oracle_functions_list_2{'CORR'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions042.htm';
     $oracle_functions_list_2{'CORR'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-aggregate.html';
