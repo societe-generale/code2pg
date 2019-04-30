@@ -66,7 +66,7 @@ my %LANGUAGE_COMMENTS_END = (
 );
 
 my %REGEX_SEARCH; # how we identify keywords
-$REGEX_SEARCH{'plain'}{'before'} = '';             # directly as in sql files 
+$RGEX_SEARCH{'plain'}{'before'} = '';             # directly as in sql files 
 $REGEX_SEARCH{'plain'}{'after'}  = '';
 $REGEX_SEARCH{'tags'}{'before'} = '>(?s:.*?)';      # inside <tag> SQL STRING <tag>
 $REGEX_SEARCH{'tags'}{'after'}  = '(?s:.*?)<';
@@ -2359,6 +2359,8 @@ sub conf_file_handling {
         exit(2);
     }
 
+    return (1);
+
 }
 
 ################################################################################
@@ -2504,43 +2506,43 @@ Usage: code2pg [--option value]
 
   A source code analyzer that estimates an Oracle to PostgreSQL migration.
 
-  -c, --config-file file   : a global code2pg configuration file
-                             if command line parameters are given, they take
-			     precedence over those in this file
-  -C, --csv-output file    : Oracle keywords will be redirected to this csv file
-  -d, --directory dir      : the source code directory to analyze.
-                             Can be used multiple times (-d dir1 -d dir2)
-  -D, --directorytype type : the type of directory to analyze (svn|file)
-  -e, --extension ext      : extensions of files to analyze. 
-                             Can be used multiple times (-e ext1 -e ext2)
-  -f, --format form        : report will be generated in the specified format
-                             form = [txt|html|minimal]. Will be html by default
-  -h, --help [instr]       : print this help.
-                             With a parameter, will print help on this 
-			     specific RDBMS instruction in markdown format.
-			     instr can also be set to "all_instructions" 
-  -l, --language lang      : Where the SQL instructions will be looked for.
-                             lang = [plain|comma-strings|tags]
-  --level1-minutes m       : minutes for a level1 instruction (1 by default)
-  --level2-minutes m       : minutes for a level2 instruction (4 by default)
-  --level3-minutes m       : minutes for a level3 instruction (8 by default)
-  --level4-minutes m       : minutes for a level4 instruction (20 by default)
-  --minutes-per-workday m  : number of minutes per workday (360 by default)
-  -o, --output-file file   : this will be the generated report filename
-                             For html, will be estimation.html by default
+  -c, --config-file file    : a global code2pg configuration file
+                              if command line parameters are given, they take
+			      precedence over those in this file
+  -C, --csv-output file     : Oracle keywords will be redirected to this csv file
+  -d, --directory dir       : the source code directory to analyze.
+                              Can be used multiple times (-d dir1 -d dir2)
+  -D, --directorytype type  : the type of directory to analyze (svn|file)
+  -e, --extension ext       : extensions of files to analyze. 
+                              Can be used multiple times (-e ext1 -e ext2)
+  -f, --format form         : report will be generated in the specified format
+                              form = [txt|html|minimal]. Will be html by default
+  -h, --help [instr]        : print this help.
+                              With a parameter, will print help on this 
+			      specific RDBMS instruction in markdown format.
+			      instr can also be set to "all_instructions" 
+  -l, --language lang       : Where the SQL instructions will be looked for.
+                              lang = [plain|comma-strings|tags]
+  --level1-minutes m        : minutes for a level1 instruction (1 by default)
+  --level2-minutes m        : minutes for a level2 instruction (4 by default)
+  --level3-minutes m        : minutes for a level3 instruction (8 by default)
+  --level4-minutes m        : minutes for a level4 instruction (20 by default)
+  --minutes-per-workday m   : number of minutes per workday (360 by default)
+  -o, --output-file file    : this will be the generated report filename
+                              For html, will be estimation.html by default
   -O, --output-directory dir: the report will be stored in this directory
-  -p, --password pwd       : password for SVN access
-  -q, --quiet              : do not output progress to stdout. Useful for batch 
-                             processing and redirection.
-  -R, --rdbms rdbms        : from which RDBMS the migration will take place.
-                             rdbms = [oracle|db2|mssql]. 
-			     Will be oracle by default.
-  -r, --orafce             : will the migration use orafce compatibility layer
-  -T, --tagfiles           : if enabled, local source files will be tagged 
-                             directly for Oracle instructions. 
-                             Important: use on a copy of your files.
-  -u, --username user      : username for SVN access
-  -v, --version            : show script version and exit
+  -p, --password pwd        : password for SVN access
+  -q, --quiet               : do not output progress to stdout. Useful for batch 
+                              processing and redirection.
+  -R, --rdbms rdbms         : from which RDBMS the migration will take place.
+                              rdbms = [oracle|db2|mssql]. 
+			      Will be oracle by default.
+  -r, --orafce              : will the migration use orafce compatibility layer
+  -T, --tagfiles            : if enabled, local source files will be tagged 
+                              directly for Oracle instructions. 
+                              Important: use on a copy of your files.
+  -u, --username user       : username for SVN access
+  -v, --version             : show script version and exit
 
 Examples:
 
@@ -3297,7 +3299,7 @@ sub get_file_list {
     my @f;    # will output the list of files with full path
     my @cur;  # the list of files in our working directory
     print STDERR "Now parsing $directory_type type files\n" if ($DEBUG);
-    print STDERR "Extensions =\n" . join(",", @extensions_to_analyze) if ($DEBUG);
+    print STDERR "Extensions =\n" . join(",", @extensions_to_analyze) . "\n" if ($DEBUG);
 
     for my $cur_dir (@dir_to_analyze) {
 	# print STDERR "cur_dir= $cur_dir \n" if ($DEBUG);
