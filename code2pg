@@ -439,6 +439,7 @@ sub oracle_init {
     $oracle_functions_list_3{'NVL2'}{'regex'}              = '\bNVL2\s*\(';
     $oracle_functions_list_3{'PERCENT_RANK'}{'regex'}      = '\bPERCENT_RANK\s*\(';
     $oracle_functions_list_3{'RANK'}{'regex'}              = '\bRANK\s*\(';
+    $oracle_functions_list_3{'REGEXP_LIKE'}{'regex'}       = '\bREGEXP_LIKE\s*\(';
     $oracle_functions_list_3{'REGR_AVGX'}{'regex'}         = '\bREGR_AVGX\s*\(';
     $oracle_functions_list_3{'REGR_AVGY'}{'regex'}         = '\bREGR_AVGY\s*\(';
     $oracle_functions_list_3{'REGR_COUNT'}{'regex'}        = '\bREGR_COUNT\s*\(';
@@ -828,8 +829,8 @@ sub oracle_init {
     $oracle_functions_list_4{'DUMP'}{'comments'} = q{};
     $oracle_functions_list_4{'EMPTY_BLOB'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions064.htm';
     $oracle_functions_list_4{'EMPTY_BLOB'}{'pgdocumentation'} = '';
-    $oracle_functions_list_4{'EMPTY_BLOB'}{'pginstruction'} = '';
-    $oracle_functions_list_4{'EMPTY_BLOB'}{'comments'} = q{};
+    $oracle_functions_list_4{'EMPTY_BLOB'}{'pginstruction'} = 'No equivalent';
+    $oracle_functions_list_4{'EMPTY_BLOB'}{'comments'} = q{The zero length string '' can be used instead on a bytea field};
     $oracle_functions_list_4{'EMPTY_CLOB'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions064.htm';
     $oracle_functions_list_4{'EMPTY_CLOB'}{'pgdocumentation'} = '';
     $oracle_functions_list_4{'EMPTY_CLOB'}{'pginstruction'} = '';
@@ -1158,9 +1159,9 @@ sub oracle_init {
     $oracle_functions_list_3{'RANK'}{'pginstruction'} = 'rank';
     $oracle_functions_list_3{'RANK'}{'comments'} = q{The Postgresql function does support the `WITHIN GROUP` clause. Needs a similar rewriting as dense_rank.};
     $oracle_functions_list_4{'RAWTOHEX'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions157.htm';
-    $oracle_functions_list_4{'RAWTOHEX'}{'pgdocumentation'} = '';
-    $oracle_functions_list_4{'RAWTOHEX'}{'pginstruction'} = '';
-    $oracle_functions_list_4{'RAWTOHEX'}{'comments'} = q{};
+    $oracle_functions_list_4{'RAWTOHEX'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/functions-binarystring.html';
+    $oracle_functions_list_4{'RAWTOHEX'}{'pginstruction'} = 'encode';
+    $oracle_functions_list_4{'RAWTOHEX'}{'comments'} = q{encode(arg, 'HEX') might be used instead};
     $oracle_functions_list_4{'RAWTONHEX'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions158.htm';
     $oracle_functions_list_4{'RAWTONHEX'}{'pgdocumentation'} = '';
     $oracle_functions_list_4{'RAWTONHEX'}{'pginstruction'} = '';
@@ -1177,6 +1178,10 @@ sub oracle_init {
     $oracle_functions_list_4{'REGEXP_INSTR'}{'pgdocumentation'} = '';
     $oracle_functions_list_4{'REGEXP_INSTR'}{'pginstruction'} = '';
     $oracle_functions_list_4{'REGEXP_INSTR'}{'comments'} = q{};
+    $oracle_functions_list_3{'REGEXP_LIKE'}{'sourcedocumentation'} = 'https://docs.oracle.com/database/121/SQLRF/conditions007.htm#SQLRF00501';
+    $oracle_functions_list_3{'REGEXP_LIKE'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/functions-matching.html';
+    $oracle_functions_list_3{'REGEXP_LIKE'}{'pginstruction'} = '~ operator';
+    $oracle_functions_list_3{'REGEXP_LIKE'}{'comments'} = q{};
     $oracle_functions_list_4{'REGEXP_REPLACE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions163.htm';
     $oracle_functions_list_4{'REGEXP_REPLACE'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-string.html';
     $oracle_functions_list_4{'REGEXP_REPLACE'}{'pginstruction'} = 'regexp_replace';
