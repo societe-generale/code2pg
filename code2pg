@@ -2,7 +2,7 @@
 
 ################################################################################
 #
-# code2pg v0.13.0 - code migration estimation from Oracle to PostgreSQL
+# code2pg v0.13.1 - code migration estimation from Oracle to PostgreSQL
 #
 # Author: Anthony Nowocien anthony.nowocien@socgen.com
 # Copyright 2019 Société Générale
@@ -80,7 +80,7 @@ $REGEX_SEARCH{'comma-strings'}{'after'}  = '.*?\"';
 ################################################################################
 # Internal variables and constants
 
-our $VERSION                = "0.13.0"; # this script version number
+our $VERSION                = "0.13.1"; # this script version number
 my  $CONFIG_FILE            = "";       # use of a config file
 my  $DEBUG                  = "";       # enable some debugging output
 my  $DIRECTORY              = "";       # the directory to analyze
