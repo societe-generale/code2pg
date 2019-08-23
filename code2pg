@@ -2759,7 +2759,7 @@ sub db2_init {
 # mssql hash initialization
 
 sub mssql_init {
-	print "hehehe\n";
+
     # SQLSRV_FUNC_1 - each keyword will be matched with a corresponding regex - level 1
     
     # SQLSRV_FUNC_2 - each keyword will be matched with a corresponding regex - level 2
@@ -2911,6 +2911,7 @@ sub mssql_init {
     $sqlsrv_functions_list_3{'HOST_ID'}{'regex'} = '\bHOST_ID\s*\(';
     $sqlsrv_functions_list_3{'HOST_NAME'}{'regex'} = '\bHOST_NAME\s*\(';
     $sqlsrv_functions_list_3{'IDENTITY'}{'regex'} = '\bIDENTITY\s*\(';
+    $sqlsrv_functions_list_3{'IDENTITY_INSERT'}{'regex'} = '\bIDENTITY_INSERT\b';
     $sqlsrv_functions_list_3{'IDENT_CURRENT'}{'regex'} = '\bIDENT_CURRENT\s*\(';
     $sqlsrv_functions_list_3{'IDENT_INCR'}{'regex'} = '\bIDENT_INCR\s*\(';
     $sqlsrv_functions_list_3{'IDENT_SEED'}{'regex'} = '\bIDENT_SEED\s*\(';
@@ -4233,6 +4234,8 @@ sub main {
                 # the following regex matching is currently the program bottleneck
 		# while ( $file_content =~ /(?$regex_mod)$current_regex/gi)  # OK sans tags
 		# while ( $file_content =~ /(?$regex_mod)$current_regex/g)  # OK sans tags
+		
+		# print ("\tNow looking for '$element': '$current_regex'\n") if ($DEBUG);
 		while ( $file_content =~ /$current_regex/gip)  # OK sans tags
                 {
                     # print "I found ${^MATCH} at line $_ with $. \n";
