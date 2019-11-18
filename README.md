@@ -71,8 +71,8 @@ Please refer to the complete [generated documentation](https://github.com/societ
 ```
 - analyze java, jsp and .properties files in the current directory. This will so far need two reports as Oracle instructions will need to be analyzed in comma delimited strings, but directly in .properties files:
 ```
-./code2pg -e java -e jsp -l comma-strings -f myproject_java.html
-./code2pg -e properties -l plain -f myproject_properties.html
+./code2pg -e java -e jsp -l comma-strings -o myproject_java.html
+./code2pg -e properties -l plain -o myproject_properties.html
 ```
 - analyze plsql files in two directories with extension .properties and generate a named html report. When SQL files must be analyzed directly (such as pl/sql or .properties files), please configure the language as "plain". For other languages, Oracle instructions will be searched between string delimiters.
 ```
