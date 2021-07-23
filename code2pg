@@ -335,7 +335,7 @@ sub oracle_init {
     # ORA_FUNC_1 - each keyword will be matched with a corresponding regex - level 1
     $oracle_functions_list_1{'ABS'}{'regex'}                 = '\bABS\s*\(';
     $oracle_functions_list_1{'ACOS'}{'regex'}                = '\bACOS\s*\(';
-    $oracle_functions_list_1{'ASCII'}{'regex'}               = '\bASCII\b';
+    $oracle_functions_list_1{'ASCII'}{'regex'}               = '\bASCII\s*\(';
     $oracle_functions_list_1{'ASIN'}{'regex'}                = '\bASIN\s*\(';
     $oracle_functions_list_1{'ATAN'}{'regex'}                = '\bATAN\s*\(';
     $oracle_functions_list_1{'ATAN2'}{'regex'}               = '\bATAN2\s*\(';
