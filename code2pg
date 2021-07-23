@@ -55,6 +55,7 @@ my %LANGUAGE_COMMENTS_BEGIN = (
     "jsp"        => "<!--",
     "plsql"      => "--",
     "proc"       => "\/\/",
+    "perl"       => '#',
 );
 
 my %LANGUAGE_COMMENTS_END = (
@@ -63,6 +64,7 @@ my %LANGUAGE_COMMENTS_END = (
     "jsp"        => "-->",
     "plsql"      => "",
     "proc"       => "",
+    "perl"       => "",
 );
 
 my %REGEX_SEARCH; # how we identify keywords
@@ -3403,6 +3405,7 @@ Examples:
   ./code2pg -D svn -d https://mysvnrepo/project/trunk -l comma-strings -e java -f txt
   ./code2pg -c myconfigfile.conf
   ./code2pg -h ADD_MONTHS
+  ./code2pg -e pl -e pm --exclude-instr USER -l comma-strings
 
 };
     exit(1);
