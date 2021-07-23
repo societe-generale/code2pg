@@ -110,6 +110,7 @@ my  $RDBMS                  = "";       # the source rdbms instructions
 my  $SHOWVERSION            = "";       # show version and exit
 my  $TAGFILE                = "";       # tag files with special comments ?
 my  $USERNAME               = "";       # username for svn access
+my  @EXCLUDE_INSTR          = "";       # instructions to exlude from analyse
 
 my  $chosen_language        = "";
 my  $chosen_rdbms           = "oracle"; # the source rdbms instructions
@@ -287,6 +288,7 @@ GetOptions(
     'd|directory=s@'        => \$DIRECTORY,
     'D|directorytype=s'     => \$DIRECTORYTYPE,
     'e|extension=s@'        => \$EXTENSION,
+    'E|exclude-instr=s'     => \@EXCLUDE_INSTR,
     'f|format=s'            => \$OUTPUT_FORMAT,
     'l|language=s'          => \$LANGUAGE,
     'o|output-file=s'       => \$OUTPUT_FILE,
@@ -1615,6 +1617,14 @@ sub oracle_init {
     $oracle_functions_list_2{'XMLTYPE'}{'pginstruction'} = 'xml';
     $oracle_functions_list_2{'XMLTYPE'}{'comments'} = q{Oracle's `XMLTYPE` is equivalent to PostgreSQL xml type. Its use is dependant on libxml (can be checked with pg_config). Should be the case on all Redhat like systems.};
     
+    # remove unwanted instruction checks
+    foreach (@EXCLUDE_INSTR)
+    {
+        delete $oracle_functions_list_1{$_};
+        delete $oracle_functions_list_2{$_};
+        delete $oracle_functions_list_3{$_};
+        delete $oracle_functions_list_4{$_};
+    }
 
     return 1;
 }
@@ -2753,6 +2763,15 @@ sub db2_init {
     $db2_functions_list_4{'XMLGROUP'}{'pginstruction'} = 'No equivalent';
     $db2_functions_list_4{'XMLGROUP'}{'sourcedocumentation'} = '';
 
+    # remove unwanted instruction checks
+    foreach (@EXCLUDE_INSTR)
+    {
+        delete $db2_functions_list_1{$_};
+        delete $db2_functions_list_2{$_};
+        delete $db2_functions_list_3{$_};
+        delete $db2_functions_list_4{$_};
+    }
+
     return 1;
 }
 ################################################################################
@@ -3062,6 +3081,15 @@ sub mssql_init {
     $sqlsrv_functions_list_3{'ABS'}{'pginstruction'} = 'abs';
     $sqlsrv_functions_list_3{'ABS'}{'comments'} = q{};
 
+    # remove unwanted instruction checks
+    foreach (@EXCLUDE_INSTR)
+    {
+        delete $sqlsrv_functions_list_1{$_};
+        delete $sqlsrv_functions_list_2{$_};
+        delete $sqlsrv_functions_list_3{$_};
+        delete $sqlsrv_functions_list_4{$_};
+    }
+
     return 1;
 }
 
@@ -3337,6 +3365,8 @@ Usage: code2pg [--option value]
   -D, --directorytype type  : the type of directory to analyze (svn|file)
   -e, --extension ext       : extensions of files to analyze. 
                               Can be used multiple times (-e ext1 -e ext2)
+  -E, --exclude-instr instr : exclude an instruction from analyze because of
+                              too much false positive for example. 
   -f, --format form         : report will be generated in the specified format
                               form = [txt|html|minimal]. Will be html by default
   -h, --help [instr]        : print this help.
