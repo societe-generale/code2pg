@@ -32,7 +32,7 @@ Usage: code2pg
 
 =head1 DESCRIPTION
 
-code2pg will estimate in man-days how difficult a migration from Oracle to 
+code2pg will estimate in person-days how difficult a migration from Oracle to 
 PostgreSQL would be regarding application code. It does not handle the database 
 code as ora2pg does, only the given application code. Therefore, a directory of 
 source code (either files or svn) should be given as input and code2pg will 
@@ -222,7 +222,7 @@ Only one extension can be specified at a time.
 =item B<Limitation: tests>
 
 Testing (non regression, functionnal, ...) is not included in the estimation
-and can change rather drastically the cost in man-days.
+and can change rather drastically the cost in person-days.
 
 =back
 

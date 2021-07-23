@@ -10,7 +10,7 @@ What is code2pg ?
 `code2pg` is a tool that help migrating application code that contains SQL queries from Oracle to PostgreSQL standard.
 
 It can:
-- estimate in man-days how difficult a migration will be for application code (in Java files for example);
+- estimate in person-days how difficult a migration will be for application code (in Java files for example);
 - tag the source file for Oracle instructions that might need to be migrated;
 - generate different reports: html, text or minimal;
 - connect directly to a SVN repository or use local files;
@@ -94,7 +94,7 @@ Report examples
 
 ```
 Done !
-Estimation: 0.19 man-days
+Estimation: 0.19 person-days
 ```
 
 - text output:
@@ -115,13 +115,13 @@ Settings
 Estimates
 =========
 
-|            | Number of instructions | Time/instruction | Estimated time (minutes) | Man-days |
-|------------|------------------------|------------------|--------------------------|----------|
-| Level 1    |                    265 |                1 |                      265 |      0.7 |
-| Level 2    |                     27 |                4 |                      108 |      0.3 |
-| Level 3    |                     26 |                8 |                      208 |      0.6 |
-| Level 4    |                    140 |               20 |                     2800 |      7.8 |
-| estimation |                    458 |              7.4 |                     3381 |      9.4 |
+|            | Number of instructions | Time/instruction | Estimated time (minutes) | person-days |
+|------------|------------------------|------------------|--------------------------|-------------|
+| Level 1    |                    265 |                1 |                      265 |         0.7 |
+| Level 2    |                     27 |                4 |                      108 |         0.3 |
+| Level 3    |                     26 |                8 |                      208 |         0.6 |
+| Level 4    |                    140 |               20 |                     2800 |         7.8 |
+| estimation |                    458 |              7.4 |                     3381 |         9.4 |
 
 Instructions
 ============

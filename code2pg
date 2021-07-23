@@ -3578,7 +3578,7 @@ sub terminal_output {
     my $n_lvl4             = shift;       # number of level4 instructions
     my $nb_fct_tot         = shift;
     my $estimated_load     = shift;       # estimate in minutes
-    my $estimated_load_md  = shift;       # estimate in man-days
+    my $estimated_load_md  = shift;       # estimate in person-days
     my $ext_to_analyze     = shift;       # which extensions to analyze
     my $nb_fic             = shift;
     my $total_nb_lines     = shift;
@@ -3595,41 +3595,41 @@ sub terminal_output {
 
     # Create a difficulty table
     my $tbl_output;
-    $tbl_output .= "|            | Number of instructions | Time/instruction | Estimated time (minutes) | Man-days |\n";
-    $tbl_output .= "|------------|------------------------|------------------|--------------------------|----------|\n";
+    $tbl_output .= "|            | Number of instructions | Time/instruction | Estimated time (minutes) | Person-days |\n";
+    $tbl_output .= "|------------|------------------------|------------------|--------------------------|-------------|\n";
 
     $tbl_output .= "| Level 1    | " . sprintf( "%22d", $n_lvl1) . " | " ;
     $tbl_output .= sprintf("%16d", $MIGRATION_COST{"LVL1"}) . " | ";
     $tbl_output .= sprintf("%24d", $n_lvl1 * $MIGRATION_COST{"LVL1"}) . " | ";
-    $tbl_output .= sprintf( "%8.1f", $n_lvl1 * $MIGRATION_COST{"LVL1"} / $workday_minutes ) . " |\n";
+    $tbl_output .= sprintf( "%11.1f", $n_lvl1 * $MIGRATION_COST{"LVL1"} / $workday_minutes ) . " |\n";
     
     $tbl_output .= "| Level 2    | " . sprintf( "%22d", $n_lvl2) . " | " ;
     $tbl_output .= sprintf("%16d", $MIGRATION_COST{"LVL2"}) . " | " ;
     $tbl_output .= sprintf("%24d", $n_lvl2 * $MIGRATION_COST{"LVL2"}) . " | ";
-    $tbl_output .= sprintf( "%8.1f", $n_lvl2 * $MIGRATION_COST{"LVL2"} / $workday_minutes ) . " |\n";
+    $tbl_output .= sprintf( "%11.1f", $n_lvl2 * $MIGRATION_COST{"LVL2"} / $workday_minutes ) . " |\n";
 
     $tbl_output .= "| Level 3    | " . sprintf( "%22d", $n_lvl3) . " | " ;
     $tbl_output .= sprintf("%16d", $MIGRATION_COST{"LVL3"}) . " | " ;
     $tbl_output .= sprintf("%24d", $n_lvl3 * $MIGRATION_COST{"LVL3"}) . " | ";
-    $tbl_output .= sprintf( "%8.1f", $n_lvl3 * $MIGRATION_COST{"LVL3"} / $workday_minutes ) . " |\n";
+    $tbl_output .= sprintf( "%11.1f", $n_lvl3 * $MIGRATION_COST{"LVL3"} / $workday_minutes ) . " |\n";
 
     $tbl_output .= "| Level 4    | " . sprintf( "%22d", $n_lvl4) . " | " ;
     $tbl_output .= sprintf("%16d", $MIGRATION_COST{"LVL4"}) . " | " ;
     $tbl_output .= sprintf("%24d", $n_lvl4 * $MIGRATION_COST{"LVL4"}) . " | ";
-    $tbl_output .= sprintf( "%8.1f", $n_lvl4 * $MIGRATION_COST{"LVL4"} / $workday_minutes ) . " |\n";
+    $tbl_output .= sprintf( "%11.1f", $n_lvl4 * $MIGRATION_COST{"LVL4"} / $workday_minutes ) . " |\n";
 
 
     if ( $nb_fct_tot == 0 ) {
         $tbl_output .= "| estimation | " . sprintf("%22d", $nb_fct_tot) . " | ";
         $tbl_output .= sprintf( "%16.1f", 0 ) . " | ";
         $tbl_output .= sprintf("%24d", $estimated_load) . " | ";
-        $tbl_output .= sprintf( "%8.1f", $estimated_load_md ) . " |";
+        $tbl_output .= sprintf( "%11.1f", $estimated_load_md ) . " |";
     }
     else {
         $tbl_output .= "| estimation | " . sprintf("%22d", $nb_fct_tot) . " | ";
         $tbl_output .= sprintf( "%16.1f", $estimated_load / $nb_fct_tot );
         $tbl_output .= " | " . sprintf("%24d", $estimated_load) . " | ";
-        $tbl_output .= sprintf( "%8.1f", $estimated_load_md ). " |";
+        $tbl_output .= sprintf( "%11.1f", $estimated_load_md ). " |";
     }
 
     my $orafce_usage = $ORAFCE ? "Yes" : "No";
@@ -3680,7 +3680,7 @@ sub html_output {
     my $n_lvl4             = shift;         # number of level4 instructions
     my $nb_fct_tot         = shift;
     my $estimated_load     = shift;         # total load in minutes
-    my $estimated_load_md  = shift;         # total load in man-days
+    my $estimated_load_md  = shift;         # total load in person-days
     my $ext_to_analyze     = shift;         # the type of extensions to analyze
     my $nb_fic             = shift;
     my $total_nb_lines     = shift;         # number of analyzed lines of code
@@ -3740,7 +3740,7 @@ sub html_output {
 
     $ds_time_by_inst .= qq (],
     datasets: [{
-        label: "Mandays by instructions",
+        label: "Person-days by instructions",
         backgroundColor: "#c10752" ,
         data: [ );
 
@@ -3796,7 +3796,7 @@ sub html_output {
     $ds_diff_by_level .="labels: [\"Level1\",\"Level2\",\"Level3\",\"Level4\"]";
     $ds_diff_by_level .= qq (,
     datasets: [{
-        label: "Man days by difficulty level",
+        label: "Person days by difficulty level",
         backgroundColor: [ "#00c3ff", "#00d16f", "#d1bf00", "#d15000"],
         data: [$n1, $n2, $n3, $n4]
         }
@@ -3948,7 +3948,7 @@ tr:nth-child(even){background-color: #fbfbfb}
     <th>Number of instructions</th>
     <th>Time/instruction</th>
     <th>Estimated time (minutes)</th>
-    <th>Man-days</th>
+    <th>Person-days</th>
   </tr>};
 
     $html .= qq{
@@ -4031,7 +4031,7 @@ tr:nth-child(even){background-color: #fbfbfb}
     # Chart: mandays by instruction
     $html .= qq{
     <p class = "rightgraph">
-        <canvas id="myChartInstructionsManDays"> CANVAS NOT SUPPORTED </canvas>
+        <canvas id="myChartInstructionsPersonDays"> CANVAS NOT SUPPORTED </canvas>
     </p>
     };
 
@@ -4044,7 +4044,7 @@ tr:nth-child(even){background-color: #fbfbfb}
 
     $html .= qq {
         <script>
-            var ctx2 = document.getElementById('myChartInstructionsManDays').getContext('2d');
+            var ctx2 = document.getElementById('myChartInstructionsPersonDays').getContext('2d');
             var chart2 = new Chart(ctx2, {
                 type: 'horizontalBar',
                 data: {
@@ -4206,7 +4206,7 @@ sub main {
     my $nb_files               = 0;   # total number of files parsed
     my $new_nb_fct_total       = 0;
     my $estimated_load         = 0;   # load in minutes
-    my $estimated_load_mandays = 0;   # load in man-days
+    my $estimated_load_mandays = 0;   # load in person-days
     my $analyzed_ext_align     = "";
 
     $matching_lvl_{1} = ();  
@@ -4384,10 +4384,10 @@ sub main {
     }
     else { # $OUTPUT_FORMAT will be "minimal"
         if ($OUTPUT_FILE eq "") {
-            printf ("Estimation: %.2f man-days\n", $estimated_load_mandays );
+            printf ("Estimation: %.2f person-days\n", $estimated_load_mandays );
         }
         else {
-            printf $file_output_handle ("Estimation: %.2f man-days\n", $estimated_load_mandays );
+            printf $file_output_handle ("Estimation: %.2f person-days\n", $estimated_load_mandays );
         }
     }
 
@@ -4434,7 +4434,7 @@ Usage: code2pg
 
 =head1 DESCRIPTION
 
-code2pg will estimate in man-days how difficult a migration from Oracle to 
+code2pg will estimate in person-days how difficult a migration from Oracle to 
 PostgreSQL would be regarding application code. It does not handle the database 
 code as ora2pg does, only the given application code. Therefore, a directory of 
 source code (either files or svn) should be given as input and code2pg will 
@@ -4612,7 +4612,7 @@ Only one extension can be specified at a time.
 =item B<Limitation: tests>
 
 Testing (non regression, functionnal, ...) is not included in the estimation
-and can change rather drastically the cost in man-days.
+and can change rather drastically the cost in person-days.
 
 =back
 
