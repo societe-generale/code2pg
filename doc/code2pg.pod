@@ -11,6 +11,7 @@ Usage: code2pg
 [--directory string]
 [--directorytype string]
 [--extension string]
+[--exclude-instr string]
 [--format string]
 [--help [instr]]
 [--language string]
@@ -78,6 +79,18 @@ dot should be used. This should be set together with I<language> when no
 configuration file is provided.
 
 Can be used multiple times, for eg: ./code2pg -e ext1 -e ext2 ...
+
+=item B<-E>, B<--exclude-instr> string
+
+Specify which instruction will be exclude from analyze, for eg:
+
+    ./code2pg -e jsp -e java -E DELETE_WITHOUT_FROM 
+
+will exclude check of DELETE without FROM in the SQL queries because of too
+much false positive.
+
+Can be used multiple times.
+
 
 =item B<-f> , B<--format> string
 
