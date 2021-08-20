@@ -77,7 +77,9 @@ $REGEX_SEARCH{'tags'}{'after'}  = '(?s:.*?)<';
 # $REGEX_SEARCH{'tags'}{'after'}  = '[\S\s]*?<';
 # $REGEX_SEARCH{'tags'}{'after'}  = '.+?<';  # fast with /gis but not working properly
 $REGEX_SEARCH{'comma-strings'}{'before'} = '".*?'; # in "SQL STRING" 
-$REGEX_SEARCH{'comma-strings'}{'after'}  = '.*?\"';
+$REGEX_SEARCH{'comma-strings'}{'after'}  = '.*?"';
+$REGEX_SEARCH{'perl'}{'before'} = "([\"']).*?"; # in "SQL STRING" 
+$REGEX_SEARCH{'perl'}{'after'}  = ".*?\\1";
 
 ################################################################################
 # Internal variables and constants
@@ -351,7 +353,7 @@ sub oracle_init {
     $oracle_functions_list_1{'COUNT'}{'regex'}               = '\bCOUNT\s*\(';
     $oracle_functions_list_1{'CURRENT_DATE'}{'regex'}        = '\bCURRENT_DATE\b';
     $oracle_functions_list_1{'CURRENT_TIMESTAMP'}{'regex'}   = '\bCURRENT_TIMESTAMP\b';
-    $oracle_functions_list_1{'DELETE_WITHOUT_FROM'}{'regex'} = '\bDELETE(?!\s+FROM\b)';
+    $oracle_functions_list_1{'DELETE_WITHOUT_FROM'}{'regex'} = '\bDELETE(?!\s+FROM\b)\s+';
     $oracle_functions_list_1{'DUAL'}{'regex'}                = '\bFROM\s+DUAL\b';
     $oracle_functions_list_1{'EXP'}{'regex'}                 = '\bEXP\s*\(';
     $oracle_functions_list_1{'FLOOR'}{'regex'}               = '\bFLOOR\s*\(';
@@ -3266,8 +3268,7 @@ sub options_handling {
     }
 
     if ($LANGUAGE) {
-	my @ll = ("plain", "comma-strings", "tags" );
-        if ( grep ( /^$LANGUAGE$/, @ll )) {
+        if ( grep ( /^$LANGUAGE$/, keys %REGEX_SEARCH )) {
 	    $chosen_language = $LANGUAGE; 
         }
         else {
@@ -3376,7 +3377,7 @@ Usage: code2pg [--option value]
 			      specific RDBMS instruction in markdown format.
 			      instr can also be set to "all_instructions" 
   -l, --language lang       : Where the SQL instructions will be looked for.
-                              lang = [plain|comma-strings|tags]
+                              lang = [plain|comma-strings|tags|perl]
   --level1-minutes m        : minutes for a level1 instruction (1 by default)
   --level2-minutes m        : minutes for a level2 instruction (4 by default)
   --level3-minutes m        : minutes for a level3 instruction (8 by default)
@@ -3405,7 +3406,7 @@ Examples:
   ./code2pg -D svn -d https://mysvnrepo/project/trunk -l comma-strings -e java -f txt
   ./code2pg -c myconfigfile.conf
   ./code2pg -h ADD_MONTHS
-  ./code2pg -e pl -e pm --exclude-instr USER -l comma-strings
+  ./code2pg -e pl -e pm --exclude-instr USER -l perl
 
 };
     exit(1);
@@ -4506,7 +4507,7 @@ tag delimited areas.
 
 This should be set together with I<extension> when no configuration file 
 is provided.
-lang = [plain|comma-strings|tags]
+lang = [plain|comma-strings|tags|perl]
 
 =item B<--level1-minutes > integer
 

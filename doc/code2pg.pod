@@ -116,7 +116,7 @@ tag delimited areas.
 
 This should be set together with I<extension> when no configuration file 
 is provided.
-lang = [plain|comma-strings|tags]
+lang = [plain|comma-strings|tags|perl]
 
 =item B<--level1-minutes > integer
 
