@@ -115,6 +115,7 @@ my  $SHOWVERSION            = "";       # show version and exit
 my  $TAGFILE                = "";       # tag files with special comments ?
 my  $USERNAME               = "";       # username for svn access
 my  @EXCLUDE_INSTR          = "";       # instructions to exlude from analyse
+my  $SUPPORTED_CODE         = "";       # should we reported fully supported code?
 
 my  $chosen_language        = "";
 my  $chosen_rdbms           = "oracle"; # the source rdbms instructions
@@ -318,7 +319,9 @@ GetOptions(
     'level4-minutes=i'      => \$LEVEL4_MINUTES,
     'minutes-per-workday=i' => \$MINUTES_PER_WORKDAY,
     'h|help:s'              => \&help_handler,
+    'direct-conversion'     => \$SUPPORTED_CODE,
 );
+
 ################################################################################
 # handling of help switch (with or without parameter)
 
@@ -3352,6 +3355,17 @@ sub options_handling {
         }
     }
 
+    if (!$SUPPORTED_CODE && $chosen_rdbms eq 'oracle') {
+        foreach my $item ( keys %{$rdbms_functions_list_{1}} ) {
+            if ( exists $rdbms_functions_list_{1}{$item} &&
+		    exists $rdbms_functions_list_{1}{$item}{comments} &&
+		    $rdbms_functions_list_{1}{$item}{comments} =~ /Direct conversion/ ) {
+		# print "deleted $rdbms_functions_list_{1}{$item}\n" if ($DEBUG);
+                delete $rdbms_functions_list_{1}{$item};
+            }
+        }
+    }
+
     # we open a file handle but it gets closed very far in the code
     # this should be improved
     my $fo = $directory_output . "/" . $file_output;
@@ -3410,6 +3424,8 @@ Usage: code2pg [--option value]
                               Important: use on a copy of your files.
   -u, --username user       : username for SVN access
   -v, --version             : show script version and exit
+
+  --direct-conversion       : also report fully supported code.
 
 Examples:
 
