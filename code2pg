@@ -280,6 +280,13 @@ my %list_orafce_functions = (
     'PUTF'                => '\bPUTF\b',
     'PUT_LINE'            => '\bPUT_LINE\b',
     'TMPDIR'              => '\bTMPDIR\b',
+    'REGEXP_LIKE'         => '\bREGEXP_LIKE\b',
+    'REGEXP_COUNT'        => '\bREGEXP_COUNT\b',
+    'REGEXP_INSTR'        => '\bREGEXP_INSTR\b',
+    'REGEXP_SUBSTR'       => '\bREGEXP_SUBSTR\b',
+    'REGEXP_REPLACE'      => '\bREGEXP_REPLACE\b',
+    'GREATEST'            => '\bGREATEST\b',
+    'LEAST'               => '\bLEAST\b',
 );
 
 
@@ -551,6 +558,7 @@ sub oracle_init {
     $oracle_functions_list_4{'RAWTONHEX'}{'regex'}                    = '\bRAWTONHEX\s*\(';
     $oracle_functions_list_4{'REF'}{'regex'}                          = '\bREF\s*\(';
     $oracle_functions_list_4{'REFTOHEX'}{'regex'}                     = '\bREFTOHEX\s*\(';
+    $oracle_functions_list_4{'REGEXP_COUNT'}{'regex'}                 = '\bREGEXP_COUNT\s*\(';
     $oracle_functions_list_4{'REGEXP_INSTR'}{'regex'}                 = '\bREGEXP_INSTR\s*\(';
     $oracle_functions_list_4{'REGEXP_REPLACE'}{'regex'}               = '\bREGEXP_REPLACE\s*\(';
     $oracle_functions_list_4{'REGEXP_SUBSTR'}{'regex'}                = '\bREGEXP_SUBSTR\s*\(';
@@ -884,7 +892,7 @@ sub oracle_init {
     $oracle_functions_list_3{'GREATEST'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions078.htm';
     $oracle_functions_list_3{'GREATEST'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-conditional.html';
     $oracle_functions_list_3{'GREATEST'}{'pginstruction'} = 'greatest';
-    $oracle_functions_list_3{'GREATEST'}{'comments'} = q{Beware of implicit conversions};
+    $oracle_functions_list_3{'GREATEST'}{'comments'} = q{Oracle functions GREATEST return NULL if at least one of the parameters is NULL. This is not the case for the PostgreSQL. Beware of implicit conversions};
     $oracle_functions_list_4{'GROUP_ID'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions079.htm';
     $oracle_functions_list_4{'GROUP_ID'}{'pgdocumentation'} = '';
     $oracle_functions_list_4{'GROUP_ID'}{'pginstruction'} = '';
@@ -942,7 +950,7 @@ sub oracle_init {
     $oracle_functions_list_3{'LEAST'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions099.htm';
     $oracle_functions_list_3{'LEAST'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-conditional.html';
     $oracle_functions_list_3{'LEAST'}{'pginstruction'} = 'least';
-    $oracle_functions_list_3{'LEAST'}{'comments'} = q{Beware of implicit conversions};
+    $oracle_functions_list_3{'LEAST'}{'comments'} = q{Oracle functions LEAST return NULL if at least one of the parameters is NULL. This is not the case for the PostgreSQL. Beware of implicit conversions};
     $oracle_functions_list_2{'LENGTH'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions100.htm';
     $oracle_functions_list_2{'LENGTH'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-string.html';
     $oracle_functions_list_2{'LENGTH'}{'pginstruction'} = 'char_length';
@@ -1184,10 +1192,16 @@ sub oracle_init {
     $oracle_functions_list_4{'REGEXP_INSTR'}{'pgdocumentation'} = '';
     $oracle_functions_list_4{'REGEXP_INSTR'}{'pginstruction'} = '';
     $oracle_functions_list_4{'REGEXP_INSTR'}{'comments'} = q{};
-    $oracle_functions_list_3{'REGEXP_LIKE'}{'sourcedocumentation'} = 'https://docs.oracle.com/database/121/SQLRF/conditions007.htm#SQLRF00501';
-    $oracle_functions_list_3{'REGEXP_LIKE'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/functions-matching.html';
+    $oracle_functions_list_3{'REGEXP_LIKE'}{'sourcedocumentation'} = 'https://docs.oracle.com/database/121/SQLRF/condit
+ions007.htm#SQLRF00501';
+    $oracle_functions_list_3{'REGEXP_LIKE'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/functions-mat
+ching.html';
     $oracle_functions_list_3{'REGEXP_LIKE'}{'pginstruction'} = '~ operator';
     $oracle_functions_list_3{'REGEXP_LIKE'}{'comments'} = q{};
+    $oracle_functions_list_4{'REGEXP_COUNT'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions161.htm';
+    $oracle_functions_list_4{'REGEXP_COUNT'}{'pgdocumentation'} = '';
+    $oracle_functions_list_4{'REGEXP_COUNT'}{'pginstruction'} = '';
+    $oracle_functions_list_4{'REGEXP_COUNT'}{'comments'} = q{};
     $oracle_functions_list_4{'REGEXP_REPLACE'}{'sourcedocumentation'} = 'http://docs.oracle.com/database/121/SQLRF/functions163.htm';
     $oracle_functions_list_4{'REGEXP_REPLACE'}{'pgdocumentation'} = 'https://www.postgresql.org/docs/current/static/functions-string.html';
     $oracle_functions_list_4{'REGEXP_REPLACE'}{'pginstruction'} = 'regexp_replace';
@@ -3174,9 +3188,7 @@ sub conf_file_handling {
     $file_output = $config_file{"output-file"} if $config_file{"output-file"};
     $directory_output = $config_file{"output-directory"} if $config_file{"output-directory"};
     $csv_file_output = $config_file{"csv-output"} if $config_file{"csv-output"};
-    # $ORAFCE = $config_file{"orafce"} if ($config_file{"orafce"} && $config_file{"orafce"} eq 'on');
     $ORAFCE = ($config_file{"orafce"} eq 'on') if ($config_file{"orafce"}) ;
-    # $TAGFILE = $config_file{"tagfile"} if ($config_file{"tagfile"} && $config_file{"tagfile"} eq 'on');
     $TAGFILE = ($config_file{"tagfile"} eq 'on') if ($config_file{"tagfile"});
     $LEVEL1_MINUTES = $config_file{"level1-minutes"} if $config_file{"level1-minutes"};
     $LEVEL2_MINUTES = $config_file{"level2-minutes"} if $config_file{"level2-minutes"};
