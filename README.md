@@ -33,6 +33,12 @@ On a Debian box, the packages could be installed with:
 sudo apt-get install libfile-slurp-perl libfile-find-rule-perl libconfig-general-perl liblist-moreutils-perl libgetopt-mixed-perl
 ```
 
+With the cpan minus client, the prerequisites can be installed this way:
+
+```
+cpanm File::Slurp File::Find::Rule List::MoreUtils Getopt::Long Config::General
+```
+
 The script has been tested very lightly on Windows with Strawberry Perl (v5.24.3) with the proper modules installed (the CPAN client can be used for this). A warning is issued though as `wc` is usually not recognized.
 
 Installation
